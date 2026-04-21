@@ -1,0 +1,54 @@
+{
+  "name": "eds-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for AEM Edge Delivery Services development — scaffolding, validation, configuration, and guidance tools for VS Code and Cursor",
+  "type": "module",
+  "bin": {
+    "eds-mcp-server": "./dist/index.js",
+    "eds-validate": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./validator": "./dist/validator.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc && node -e \"const fs=require('fs');for (const f of ['dist/index.js','dist/cli.js']){if(!fs.existsSync(f)) continue;const c=fs.readFileSync(f,'utf8');if(!c.startsWith('#!')) fs.writeFileSync(f,'#!/usr/bin/env node\\n'+c);}\" && chmod 755 dist/index.js dist/cli.js",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "validate:blocks": "node dist/cli.js",
+    "inspect": "npx @modelcontextprotocol/inspector node dist/index.js",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "mcp",
+    "aem",
+    "edge-delivery-services",
+    "eds",
+    "adobe",
+    "blocks",
+    "helix",
+    "model-context-protocol"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "chalk": "^5.6.2",
+    "glob": "^13.0.6",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}

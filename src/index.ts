@@ -1,0 +1,92 @@
+#!/usr/bin/env node
+
+/**
+ * AEM Edge Delivery Services — MCP Server
+ *
+ * A comprehensive development assistant for AEM EDS projects.
+ * Provides tools for block scaffolding, validation, configuration,
+ * performance analysis, and guided development workflows.
+ *
+ * LLM-agnostic: no API keys needed. This server provides tools and
+ * context that any IDE LLM (Copilot, Claude, etc.) can consume.
+ *
+ * Install in your IDE:
+ *   npx @anthropic-eds/eds-mcp-server
+ *
+ * Or add to .cursor/mcp.json / .vscode/mcp.json:
+ *   { "command": "npx", "args": ["-y", "@anthropic-eds/eds-mcp-server"] }
+ */
+
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+
+// Tools
+import { registerScaffoldBlock } from './tools/scaffold-block.js';
+import { registerScaffoldModel } from './tools/scaffold-model.js';
+import { registerScaffoldProject } from './tools/scaffold-project.js';
+import { registerValidateBlock } from './tools/validate-block.js';
+import { registerExplainDom } from './tools/explain-dom.js';
+import { registerEdsConfig } from './tools/eds-config.js';
+import { registerPerformanceCheck } from './tools/check-performance.js';
+import { registerLookupBlock } from './tools/lookup-block.js';
+import { registerSearchBlockCollection } from './tools/search-block-collection.js';
+import { registerEdsScripts } from './tools/eds-scripts.js';
+import { registerGenerateBlockFromDesign } from './tools/generate-block-from-design.js';
+
+// Resources
+import { registerResources } from './resources/eds-resources.js';
+
+// Prompts
+import { registerPrompts } from './prompts/eds-prompts.js';
+
+// ─── Server Setup ─────────────────────────────────────────────
+
+const server = new McpServer({
+  name: 'eds-mcp-server',
+  version: '1.0.0',
+});
+
+// ─── Register Everything ──────────────────────────────────────
+
+// Tools: Block Development
+registerScaffoldBlock(server);    // scaffold_block — generate block files
+registerScaffoldModel(server);    // scaffold_model — generate UE component models
+registerValidateBlock(server);    // validate_block — check block against EDS standards
+registerExplainDom(server);       // explain_dom — show content → DOM mapping
+registerLookupBlock(server);      // lookup_block — search block patterns & references
+registerSearchBlockCollection(server); // search_block_collection — search Adobe Block Collection & Block Party
+registerPerformanceCheck(server); // check_performance — analyze block performance
+registerGenerateBlockFromDesign(server); // generate_block_from_design — text / image / Figma → block (Adobe CDD)
+
+// Tools: Project & Configuration
+registerScaffoldProject(server);  // scaffold_project — new project setup guide
+registerEdsConfig(server);        // eds_config — configuration file templates
+registerEdsScripts(server);       // eds_scripts_guide — scripts.js customization
+
+// Resources: Documentation (available as context to the LLM)
+registerResources(server);
+
+// Prompts: Task Templates (appear as slash commands in IDEs)
+registerPrompts(server);
+
+// ─── Start Server ─────────────────────────────────────────────
+
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+
+  // Log to stderr — stdout is reserved for JSON-RPC
+  console.error('🚀 EDS MCP Server v1.0.0 running on stdio');
+  console.error('   Tools: scaffold_block, scaffold_model, validate_block, explain_dom,');
+  console.error('          lookup_block, search_block_collection, check_performance,');
+  console.error('          generate_block_from_design,');
+  console.error('          scaffold_project, eds_config, eds_scripts_guide');
+  console.error('   Resources: eds-coding-standards, eds-block-guide, eds-cheatsheet, eds-adobe-skills');
+  console.error('   Prompts: new-block, fix-block, design-to-block');
+  console.error('   CLI: eds-validate (block validator/linter)');
+}
+
+main().catch((error) => {
+  console.error('Fatal error:', error);
+  process.exit(1);
+});
