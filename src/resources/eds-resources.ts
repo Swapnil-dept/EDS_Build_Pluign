@@ -37,6 +37,12 @@ import {
   SDK_HARD_RULES,
 } from '../knowledge/storefront-sdk.js';
 import { COMMERCE_BLOCKS } from '../knowledge/storefront-blocks.js';
+import {
+  AEM_CLOUD_SKILLS,
+  AEM_CLOUD_HARD_RULES,
+  AEM_CLOUD_PROJECT_STRUCTURE,
+  AEM_CLOUD_PATTERNS,
+} from '../knowledge/aem-cloud-skills.js';
 
 /**
  * Register MCP Resources — static knowledge the IDE's LLM can reference.
@@ -272,6 +278,54 @@ var(--nav-height)         /* Navigation bar height */
           `## Design system components (${SDK_DESIGN_COMPONENTS.length})\n${SDK_DESIGN_COMPONENTS.map((c) => `- ${c}`).join('\n')}\n\n` +
           `${SDK_DESIGN_TOKENS}\n\n${CONTAINER_SLOT_PATTERN}\n\n${EVENT_BUS_PATTERN}\n\n${INITIALIZER_PATTERN}\n\n${COMPOSITION_RECIPE}\n\n` +
           `## Hard rules\n${SDK_HARD_RULES.map((r) => `- ${r}`).join('\n')}`,
+      }],
+    }),
+  );
+
+  // ─── AEMaaCS Skills Index ──────────────────────────────
+  server.resource(
+    'aemaacs-skills',
+    'eds://docs/aemaacs-skills',
+    {
+      description: 'AEM as a Cloud Service — index of Adobe skills (ensure-agents-md, best-practices, create-component, dispatcher, migration, aem-workflow). All BETA. Mirrors github.com/adobe/skills/tree/beta/skills/aem/cloud-service.',
+      mimeType: 'text/markdown',
+      annotations: { audience: ['assistant'] as const, priority: 0.95 },
+    },
+    async (uri) => ({
+      contents: [{
+        uri: uri.href,
+        mimeType: 'text/markdown',
+        text:
+          `# Adobe AEM as a Cloud Service — Skills (${AEM_CLOUD_SKILLS.length}, BETA)\n\n` +
+          AEM_CLOUD_SKILLS.map((s) =>
+            `## \`${s.id}\` — ${s.title}\n\n${s.description}\n\n**When:** ${s.when}\n\n**SKILL.md:** ${s.path}` +
+            (s.subSkills?.length ? `\n\n**Sub-skills:**\n${s.subSkills.map((ss) => `- \`${ss.id}\` — ${ss.description}`).join('\n')}` : ''),
+          ).join('\n\n') +
+          `\n\n## Hard rules (always)\n${AEM_CLOUD_HARD_RULES.map((r) => `- ${r}`).join('\n')}`,
+      }],
+    }),
+  );
+
+  // ─── AEMaaCS Project Layout & Patterns ─────────────────
+  server.resource(
+    'aemaacs-architecture',
+    'eds://docs/aemaacs-architecture',
+    {
+      description: 'AEM as a Cloud Service Maven project layout, hard constraints, and the migration / best-practices pattern reference table.',
+      mimeType: 'text/markdown',
+      annotations: { audience: ['assistant'] as const, priority: 0.9 },
+    },
+    async (uri) => ({
+      contents: [{
+        uri: uri.href,
+        mimeType: 'text/markdown',
+        text:
+          `# AEM as a Cloud Service — Architecture & Patterns\n\n` +
+          `## Canonical project layout\n\n\`\`\`\n${AEM_CLOUD_PROJECT_STRUCTURE}\n\`\`\`\n\n` +
+          `## Hard rules\n${AEM_CLOUD_HARD_RULES.map((r) => `- ${r}`).join('\n')}\n\n` +
+          `## Migration / best-practices patterns\n\n` +
+          '| Pattern | Module | Classification |\n|---|---|---|\n' +
+          AEM_CLOUD_PATTERNS.map((p) => `| \`${p.id}\` — ${p.title} | \`${p.module}\` | ${p.classification} |`).join('\n'),
       }],
     }),
   );

@@ -70,7 +70,7 @@ If the server is running, Copilot will use the MCP tools automatically.
 
 | Tool | Description |
 |---|---|
-| `detect_project_type` | Inspect package.json, dir listings, head.html, config.json, fstab.yaml and decide whether the workspace is a vanilla EDS project or an EDS Commerce Storefront. Returns confidence-scored verdict, installed drop-ins, mismatch warnings (e.g. dropin installed but `npm run postinstall` not run), and the recommended next tools. |
+| `detect_project_type` | Inspect package.json, dir listings, head.html, config.json, fstab.yaml, **plus pom.xml, .aem-skills-config.yaml, and ui.apps/core/dispatcher listings**, and decide whether the workspace is a vanilla EDS project, an EDS Commerce Storefront, or **AEM as a Cloud Service** (Maven/Java). Returns a confidence-scored verdict, installed drop-ins / detected AEM modules, mismatch warnings (e.g. missing `AGENTS.md` or `.aem-skills-config.yaml`), and the recommended next tools. |
 
 ### Block & project tools
 
@@ -102,6 +102,19 @@ If the server is running, Copilot will use the MCP tools automatically.
 | `eds_storefront_config` | Generate `default-site.json`, `default-config.json`, `demo-config.json` (PaaS/SaaS), `demo-config-aco.json` (Adobe Commerce Optimizer), `default-query.yaml`, `default-sitemap.yaml`, `head.html`, and `scripts/configs.js`. |
 | `commerce_events_guide` | Guide for Adobe Client Data Layer + `@dropins/tools` event bus. Includes setup of `@adobe/magento-storefront-events-sdk` + `@adobe/magento-storefront-event-collector` and analytics/cart-counter/custom-event snippets. |
 
+### AEM as a Cloud Service tools (Maven / Java stack)
+
+Mirror Adobe's [skills/aem/cloud-service](https://github.com/adobe/skills/tree/beta/skills/aem/cloud-service) skills (BETA). All AEMaaCS tools require `detect_project_type` to first return `aemaacs`.
+
+| Tool | Description |
+|---|---|
+| `aem_skills_index` | Index of the 6 Adobe AEMaaCS skills (ensure-agents-md, best-practices, create-component, dispatcher, migration, aem-workflow): purpose, when-to-use, SKILL.md links. |
+| `ensure_agents_md` | Bootstrap. Generates a tailored `AGENTS.md`, a one-line `CLAUDE.md` (`@AGENTS.md`), and a `.aem-skills-config.yaml` stub at the workspace root. Refuses to overwrite existing files. |
+| `scaffold_aem_component` | Scaffold a full AEMaaCS component: `.content.xml`, `_cq_dialog/.content.xml` (Granite UI Coral 3), HTL template, Sling Model + JUnit test, clientlib (CSS/JS/css.txt/js.txt), optional Sling Servlet. Supports extending Core Components via `@Self @Via(ResourceSuperType.class)`. |
+| `aem_best_practices` | Pattern reference index for Java/OSGi/HTL guardrails (scheduler, replication, eventListener, eventHandler, resourceChangeListener, assetApi, scr-to-ds, resolver-logging, htlLint). Returns the matching `references/<module>.md` path + Cloud Service hard rules. |
+| `aem_migration_pattern` | Migrate **one** legacy AEM pattern to AEMaaCS. Carries the orchestration rules from Adobe's `migration` skill (BPA CSV / CAM via MCP / manual flows). One pattern per session. |
+| `aem_dispatcher_config` | Route Dispatcher requests to the right specialist (config-authoring, technical-advisory, incident-response, performance-tuning, security-hardening, workflow-orchestrator). Surfaces the core-7 MCP tools when the user has Dispatcher MCP configured for cloud variant. |
+
 ## Resources
 
 | Resource | URI | Description |
@@ -113,6 +126,8 @@ If the server is running, Copilot will use the MCP tools automatically.
 | Storefront Architecture | `eds://docs/storefront-architecture` | Project layout, dropin lifecycle, configs, backends (PaaS / ACCS / ACO) |
 | Storefront Drop-ins | `eds://docs/storefront-dropins` | Catalog of all drop-ins with packages, containers, slots, events |
 | Storefront SDK | `eds://docs/storefront-sdk` | `@dropins/tools` design system, tokens, container/slot pattern, event bus |
+| AEMaaCS Skills | `eds://docs/aemaacs-skills` | Index of Adobe's AEM Cloud Service skills (BETA) — ensure-agents-md, best-practices, create-component, dispatcher, migration, aem-workflow |
+| AEMaaCS Architecture | `eds://docs/aemaacs-architecture` | Maven project layout, hard rules (`/libs` immutable, OSGi DS R6, service users, Cloud Manager deploy), and the migration pattern reference table |
 
 ## Prompts
 
@@ -124,6 +139,9 @@ If the server is running, Copilot will use the MCP tools automatically.
 | `new-storefront-project` | Bootstrap a new EDS + Adobe Commerce storefront end-to-end |
 | `add-and-customize-dropin` | Install a drop-in, scaffold its block, override slots, apply brand tokens |
 | `storefront-from-design` | Translate a page design into commerce blocks composed from drop-ins |
+| `new-aem-component` | Scaffold an AEMaaCS component (Java / HTL / Granite UI dialog) with Step-0 detection + `.aem-skills-config.yaml` gate |
+| `migrate-to-cloud-service` | Migrate one legacy AEM pattern (scheduler / replication / event* / asset* / htlLint) to AEMaaCS |
+| `aem-dispatcher-task` | Route an AEMaaCS Dispatcher task (config / advisory / incident / perf / security) to the right specialist guidance |
 
 ---
 

@@ -224,5 +224,63 @@ export function registerPrompts(server) {
             },
         ],
     }));
+    // ─── New AEM Component (AEMaaCS) ─────────────────────────
+    server.prompt('new-aem-component', 'Step-by-step guide for scaffolding an AEM as a Cloud Service component (Java / HTL / Granite UI dialog).', {
+        componentName: z.string().describe('kebab-case component name (e.g. "promo-card")'),
+        description: z.string().describe('What the component does and the dialog fields the user wants'),
+        extendsCore: z.string().optional().describe('Optional Core Component to extend (teaser, list, navigation, etc.)'),
+    }, ({ componentName, description, extendsCore }) => ({
+        messages: [{
+                role: 'user',
+                content: {
+                    type: 'text',
+                    text: `Create an AEM as a Cloud Service component named "${componentName}" that ${description}.${extendsCore ? `\nExtend the Core Component "${extendsCore}".` : ''}\n\n` +
+                        `**Step 0 (always first):** call \`detect_project_type\` with snapshots of the workspace. Pass \`pomXml\`, \`aemSkillsConfigYaml\`, and listings of \`ui.apps/\`, \`core/\`, \`dispatcher/\`. If it does NOT return \`aemaacs\`, STOP.\n\n` +
+                        `**Step 1:** if no \`AGENTS.md\` exists at the workspace root, call \`ensure_agents_md\` first. Write the AGENTS.md, CLAUDE.md, and \`.aem-skills-config.yaml\` it returns. Wait for the user to fill in \`.aem-skills-config.yaml\` (project, package, group, configured: true).\n\n` +
+                        `**Step 2:** read \`.aem-skills-config.yaml\` — it is the **single source of truth**. Do not infer project / package / group from the file system or pom.xml.\n\n` +
+                        `**Step 3:** ask the user to **confirm the dialog field list** verbatim before scaffolding. No extras, no renames.\n\n` +
+                        `**Step 4:** call \`scaffold_aem_component\` with the confirmed fields and the values from \`.aem-skills-config.yaml\`. Write the files it returns to the exact paths shown.\n\n` +
+                        `**Step 5:** if you need patterns (Sling Resource Merger for Core Component dialogs, ResourceResolver service users, OSGi DS R6, HTL guardrails) call \`aem_best_practices\` and read the matching reference module before editing.\n\n` +
+                        `**Step 6:** build with \`mvn -PautoInstallSinglePackage clean install -pl core,ui.apps\`.`,
+                },
+            }],
+    }));
+    // ─── Migrate one pattern to AEMaaCS ─────────────────────
+    server.prompt('migrate-to-cloud-service', 'Migrate **one** legacy AEM pattern (scheduler / replication / eventListener / eventHandler / resourceChangeListener / assetApi / htlLint) to AEM as a Cloud Service.', {
+        pattern: z.string().describe('Exactly one of: scheduler, resourceChangeListener, replication, eventListener, eventHandler, assetApi, htlLint'),
+        source: z.string().optional().describe('"bpa-csv", "cam-mcp", or "manual" (default).'),
+    }, ({ pattern, source }) => ({
+        messages: [{
+                role: 'user',
+                content: {
+                    type: 'text',
+                    text: `Migrate the **${pattern}** pattern to AEM as a Cloud Service.\n\n` +
+                        `**Step 0:** call \`detect_project_type\` and confirm the workspace is \`aemaacs\`. If \`AGENTS.md\` is missing, run \`ensure_agents_md\` first.\n\n` +
+                        `**Step 1:** call \`aem_migration_pattern\` with \`pattern: "${pattern}"\` and \`source: "${source ?? 'manual'}"\`. Follow the discovery flow it prints. **One pattern per session** — refuse to fix a different pattern in this same chat.\n\n` +
+                        `**Step 2:** read the best-practices module the tool points to **before** editing any code. Use \`aem_best_practices\` if you need the index again.\n\n` +
+                        `**Step 3:** for each target file: read source → classify per the module → apply transformation steps in order → run lints / unit tests → next file.\n\n` +
+                        `**Step 4:** preserve \`isAuthor()\` and other run-mode guards. Do not change business logic. Do not rename classes unless the module says to. Do not invent values.\n\n` +
+                        `**Step 5:** if MCP fails, **stop** and show the verbatim error. Do not silently fall back. Wait for the user to direct the next step.\n\n` +
+                        `**Step 6:** report files touched, sub-paths, and lint/test status.`,
+                },
+            }],
+    }));
+    // ─── Dispatcher config ──────────────────────────────────
+    server.prompt('aem-dispatcher-task', 'Route an AEMaaCS Dispatcher request (config / advisory / incident / perf / security) to the right specialist guidance.', {
+        intent: z.string().describe('config-authoring | technical-advisory | incident-response | performance-tuning | security-hardening | workflow-orchestrator'),
+        question: z.string().describe('The user question or task in their own words'),
+    }, ({ intent, question }) => ({
+        messages: [{
+                role: 'user',
+                content: {
+                    type: 'text',
+                    text: `Help with this AEMaaCS Dispatcher task: ${question}\n\n` +
+                        `**Step 0:** confirm the workspace is \`aemaacs\` via \`detect_project_type\` (pass \`dispatcherDirListing\` so the score reflects it).\n\n` +
+                        `**Step 1:** call \`aem_dispatcher_config\` with \`intent: "${intent}"\` and the user question. Follow the specialist guidance it returns.\n\n` +
+                        `**Step 2:** for config edits, validate locally with the Dispatcher SDK before committing:\n\`\`\`bash\ncd dispatcher && bin/validator.sh -d out src/conf.dispatcher.d\n\`\`\`\n\n` +
+                        `**Step 3:** never widen the deny-by-default filter farm without explicit justification. Never expose \`/system/\`, \`/crx/\`, \`/etc/\`, \`/apps/\`, \`/var/\` from publish vhosts.`,
+                },
+            }],
+    }));
 }
 //# sourceMappingURL=eds-prompts.js.map
