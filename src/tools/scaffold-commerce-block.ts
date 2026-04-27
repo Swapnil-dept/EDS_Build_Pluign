@@ -6,7 +6,7 @@ import { findDropin, buildMountSnippet } from '../knowledge/storefront-dropins.j
 export function registerScaffoldCommerceBlock(server: McpServer) {
   server.tool(
     'scaffold_commerce_block',
-    `Scaffold a complete EDS commerce block (JS + CSS + README + sample-content + _<block>.json UE config). Generates the canonical drop-in mount inside decorate(), uses Drop-in SDK design tokens for CSS, and includes Universal Editor config so authors can drop the block in pages. Pick from the catalog (commerce-cart, commerce-checkout, commerce-product-details, commerce-product-list-page, commerce-recommendations, …) or pass a custom block name with explicit dropin id.`,
+    `Scaffold a complete EDS commerce block (JS + CSS + README + sample-content + _<block>.json UE config). PRECONDITION: only use on an EDS Commerce Storefront project — run \`detect_project_type\` first if you're unsure. For vanilla EDS blocks use \`scaffold_block\` instead. Generates the canonical drop-in mount inside decorate(), uses Drop-in SDK design tokens for CSS, and includes Universal Editor config so authors can drop the block in pages. Pick from the catalog (commerce-cart, commerce-checkout, commerce-product-details, commerce-product-list-page, commerce-recommendations, …) or pass a custom block name with explicit dropin id.`,
     {
       blockName: z.string().describe('Block name in kebab-case (e.g. "commerce-cart"). If it matches the catalog, all defaults are pre-filled.'),
       dropin: z.string().optional().describe('Drop-in id to mount (required if blockName is not in the catalog).'),

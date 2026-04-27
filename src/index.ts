@@ -33,6 +33,9 @@ import { registerSearchBlockCollection } from './tools/search-block-collection.j
 import { registerEdsScripts } from './tools/eds-scripts.js';
 import { registerGenerateBlockFromDesign } from './tools/generate-block-from-design.js';
 
+// Tools — Project routing (smart detection)
+import { registerDetectProjectType } from './tools/detect-project-type.js';
+
 // Tools — Storefront (Adobe Commerce drop-ins)
 import { registerScaffoldStorefrontProject } from './tools/scaffold-storefront-project.js';
 import { registerAddDropin } from './tools/add-dropin.js';
@@ -74,6 +77,9 @@ registerScaffoldProject(server);  // scaffold_project — new project setup guid
 registerEdsConfig(server);        // eds_config — configuration file templates
 registerEdsScripts(server);       // eds_scripts_guide — scripts.js customization
 
+// Tools: Project routing — call FIRST to decide EDS vs storefront
+registerDetectProjectType(server);         // detect_project_type
+
 // Tools: Storefront (Adobe Commerce drop-ins)
 registerScaffoldStorefrontProject(server); // scaffold_storefront_project
 registerAddDropin(server);                 // add_dropin
@@ -103,6 +109,7 @@ async function main() {
   console.error('          lookup_block, search_block_collection, check_performance,');
   console.error('          generate_block_from_design,');
   console.error('          scaffold_project, eds_config, eds_scripts_guide');
+  console.error('   Routing: detect_project_type (call first to decide EDS vs storefront)');
   console.error('   Storefront tools: scaffold_storefront_project, add_dropin, lookup_dropin,');
   console.error('                     customize_dropin_slot, style_dropin, scaffold_commerce_block,');
   console.error('                     validate_storefront, eds_storefront_config, commerce_events_guide');

@@ -35,6 +35,8 @@ export function registerPrompts(server: McpServer) {
       const lines: string[] = [];
       lines.push(`Create an AEM EDS block named "${blockName}" that ${description}.`);
       lines.push('');
+      lines.push('**Step 0 (always first):** call `detect_project_type` with snapshots of the workspace (package.json, ls of root/scripts/blocks/scripts/__dropins__, head.html, config.json). If it returns `storefront`, STOP — use `scaffold_commerce_block` and the storefront prompts instead. Continue below only if it returns `eds`.');
+      lines.push('');
       lines.push('Target: aem-boilerplate-xwalk (Universal Editor authoring).');
       lines.push('');
       lines.push('Requirements:');
@@ -137,6 +139,7 @@ export function registerPrompts(server: McpServer) {
               (imageRefs ? `**Images:** ${imageRefs}\n` : '') +
               (figmaUrl ? `**Figma:** ${figmaUrl}\n` : '') +
               `\n` +
+              `**Step 0 (always first):** call \`detect_project_type\` with workspace snapshots. If it returns \`storefront\`, switch to the \`storefront-from-design\` prompt — commerce pages must be composed from drop-ins, not vanilla blocks.\n\n` +
               `Steps to follow (Adobe CDD workflow):\n` +
               `1. Call \`generate_block_from_design\` with the same inputs to get the workflow outline, vision-analysis prompt, Figma-fetch recipe (if any), and a baseline scaffold.\n` +
               `2. Execute the vision-analysis prompt against the image(s) / Figma export — produce structure, fields, variants, responsive behavior, interactivity, design tokens, and acceptance criteria.\n` +
@@ -181,6 +184,7 @@ export function registerPrompts(server: McpServer) {
             type: 'text' as const,
             text:
               `Bootstrap a new EDS + Adobe Commerce storefront named "${siteName}".\n\n` +
+              `**Step 0 (if a project already exists in the workspace):** call \`detect_project_type\` first. If it reports \`eds\` or \`storefront\`, confirm with the user before overwriting. If \`unknown\` or empty workspace, proceed.\n\n` +
               `Steps:\n` +
               `1. Call \`scaffold_storefront_project\` with siteName="${siteName}", backend="${backend ?? 'paas'}"${dropins ? `, dropins=[${dropins.split(',').map((s) => `"${s.trim()}"`).join(', ')}]` : ''}.\n` +
               `2. Execute the install + postinstall steps it returns.\n` +
@@ -214,6 +218,7 @@ export function registerPrompts(server: McpServer) {
             type: 'text' as const,
             text:
               `Add the **${dropin}** drop-in to this storefront and brand it.\n\n` +
+              `**Step 0 (always first):** call \`detect_project_type\` with workspace snapshots. If type is not \`storefront\`, run \`scaffold_storefront_project\` first — you cannot add drop-ins to a vanilla EDS project.\n\n` +
               `Steps:\n` +
               `1. \`lookup_dropin\` with query="${dropin}" — review containers, slots, and events.\n` +
               `2. \`add_dropin\` with dropin="${dropin}" — install + wire initializer.\n` +
@@ -252,6 +257,7 @@ export function registerPrompts(server: McpServer) {
               (text ? `**Description:** ${text}\n` : '') +
               (imageRefs ? `**Images:** ${imageRefs}\n` : '') +
               (figmaUrl ? `**Figma:** ${figmaUrl}\n` : '') + '\n' +
+              `**Step 0 (always first):** call \`detect_project_type\`. If not \`storefront\`, run \`scaffold_storefront_project\` before continuing.\n\n` +
               `Steps:\n` +
               `1. Identify which drop-in(s) the page needs (cart, checkout, pdp, product-discovery, …) — call \`lookup_dropin\` for each candidate.\n` +
               `2. For each drop-in, decide between **slot overrides** (small UI tweaks inside the dropin layout) and **container composition** (custom layout assembled from individual containers like ProductGallery + ProductPrice + custom CTA).\n` +

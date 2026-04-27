@@ -14,7 +14,7 @@ const BLOCK_NAME_REGEX = /^[a-z][a-z0-9-]*$/;
 export function registerScaffoldBlock(server: McpServer) {
   server.tool(
     'scaffold_block',
-    `Generate a complete AEM EDS block file structure. Creates block.js (with decorate function), block.css (scoped styles), README.md, test.html, and sample-content.md. All files follow EDS conventions: vanilla ES6+, no dependencies, CSS scoped to block class, mobile-first responsive design.`,
+    `Generate a complete AEM EDS block file structure. PRECONDITION: prefer this on a vanilla EDS project. On an EDS Commerce Storefront project, use \`scaffold_commerce_block\` instead so the dropin mount + slots + UE config are wired correctly. Run \`detect_project_type\` first if you're unsure. Creates block.js (with decorate function), block.css (scoped styles), README.md, test.html, and sample-content.md. All files follow EDS conventions: vanilla ES6+, no dependencies, CSS scoped to block class, mobile-first responsive design.`,
     {
       blockName: z
         .string()

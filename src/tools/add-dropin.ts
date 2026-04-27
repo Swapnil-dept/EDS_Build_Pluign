@@ -5,7 +5,7 @@ import { DROPIN_CATALOG, findDropin, buildMountSnippet } from '../knowledge/stor
 export function registerAddDropin(server: McpServer) {
   server.tool(
     'add_dropin',
-    `Install and wire a single Adobe Commerce drop-in into an existing EDS storefront. Returns: npm install command, postinstall reminder, scripts/initializers.js wiring, the canonical block scaffold (blocks/<commerce-X>/<commerce-X>.js), and the list of slots & events you can customize. Pick from the 12 official drop-ins (cart, checkout, order, pdp, product-discovery, product-recommendations, personalization, payment-services, account, auth, wishlist, quick-order).`,
+    `Install and wire a single Adobe Commerce drop-in into an existing EDS storefront. PRECONDITION: only call this on an EDS Commerce Storefront project — run \`detect_project_type\` first if you're unsure. On a vanilla EDS project, run \`scaffold_storefront_project\` first. Returns: npm install command, postinstall reminder, scripts/initializers.js wiring, the canonical block scaffold (blocks/<commerce-X>/<commerce-X>.js), and the list of slots & events you can customize. Pick from the 12 official drop-ins (cart, checkout, order, pdp, product-discovery, product-recommendations, personalization, payment-services, account, auth, wishlist, quick-order).`,
     {
       dropin: z
         .string()

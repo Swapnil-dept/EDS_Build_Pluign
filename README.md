@@ -66,6 +66,12 @@ If the server is running, Copilot will use the MCP tools automatically.
 
 ## Available Tools
 
+### Routing — call FIRST in any new workspace
+
+| Tool | Description |
+|---|---|
+| `detect_project_type` | Inspect package.json, dir listings, head.html, config.json, fstab.yaml and decide whether the workspace is a vanilla EDS project or an EDS Commerce Storefront. Returns confidence-scored verdict, installed drop-ins, mismatch warnings (e.g. dropin installed but `npm run postinstall` not run), and the recommended next tools. |
+
 ### Block & project tools
 
 | Tool | Description |
