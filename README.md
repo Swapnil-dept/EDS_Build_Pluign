@@ -66,6 +66,8 @@ If the server is running, Copilot will use the MCP tools automatically.
 
 ## Available Tools
 
+### Block & project tools
+
 | Tool | Description |
 |---|---|
 | `scaffold_block` | Generate a complete block file structure (JS, CSS, README, test.html, sample content) |
@@ -80,6 +82,20 @@ If the server is running, Copilot will use the MCP tools automatically.
 | `eds_config` | Get configuration templates (fstab, head.html, redirects, headers, robots, etc.) |
 | `eds_scripts_guide` | Guidance for customizing scripts.js, delayed.js, and aem.js |
 
+### Storefront tools (Adobe Commerce drop-ins)
+
+| Tool | Description |
+|---|---|
+| `scaffold_storefront_project` | Bootstrap a new EDS + Adobe Commerce storefront from `aem-boilerplate-commerce`. Returns install steps, dropin selection, initializer wiring, configs, and the project layout. |
+| `add_dropin` | Install a single drop-in (cart, checkout, pdp, …) — npm install + postinstall + initializer + block scaffold + slot/event reference. |
+| `lookup_dropin` | Browse the catalog of all 12 drop-ins (B2C + B2B): packages, containers, slots, events, suggested block names. |
+| `customize_dropin_slot` | Generate a slot-override snippet (EmptyCart, ProductAttributes, PaymentMethods, …) using the SlotContext API. |
+| `style_dropin` | Brand a drop-in via Drop-in SDK design tokens (`--color-brand-*`, `--type-*`, `--spacing-*`, `--shape-*`). Outputs scoped CSS. |
+| `scaffold_commerce_block` | Scaffold a complete commerce block (JS + CSS + README + sample-content + `_<block>.json` UE config + test.html) that mounts a drop-in container. |
+| `validate_storefront` | Sanity-check a storefront project: dropin/postinstall sync, initializer wiring, config completeness, ACDL bootstrap, pre-LCP discipline. |
+| `eds_storefront_config` | Generate `default-site.json`, `default-config.json`, `demo-config.json` (PaaS/SaaS), `demo-config-aco.json` (Adobe Commerce Optimizer), `default-query.yaml`, `default-sitemap.yaml`, `head.html`, and `scripts/configs.js`. |
+| `commerce_events_guide` | Guide for Adobe Client Data Layer + `@dropins/tools` event bus. Includes setup of `@adobe/magento-storefront-events-sdk` + `@adobe/magento-storefront-event-collector` and analytics/cart-counter/custom-event snippets. |
+
 ## Resources
 
 | Resource | URI | Description |
@@ -88,6 +104,9 @@ If the server is running, Copilot will use the MCP tools automatically.
 | Block Guide | `eds://docs/block-development` | DOM pipeline, CSS scoping, content authoring tables |
 | Cheatsheet | `eds://docs/cheatsheet` | Quick reference — common patterns, file locations, CLI commands |
 | Adobe Skills | `eds://docs/adobe-skills` | CDD workflow, content modeling, UE component model, code review |
+| Storefront Architecture | `eds://docs/storefront-architecture` | Project layout, dropin lifecycle, configs, backends (PaaS / ACCS / ACO) |
+| Storefront Drop-ins | `eds://docs/storefront-dropins` | Catalog of all drop-ins with packages, containers, slots, events |
+| Storefront SDK | `eds://docs/storefront-sdk` | `@dropins/tools` design system, tokens, container/slot pattern, event bus |
 
 ## Prompts
 
@@ -96,6 +115,9 @@ If the server is running, Copilot will use the MCP tools automatically.
 | `new-block` | Step-by-step guide for creating a new EDS block from scratch |
 | `fix-block` | Diagnose and fix issues with an existing EDS block |
 | `design-to-block` | Turn a design (text / screenshot / Figma URL) into an EDS block |
+| `new-storefront-project` | Bootstrap a new EDS + Adobe Commerce storefront end-to-end |
+| `add-and-customize-dropin` | Install a drop-in, scaffold its block, override slots, apply brand tokens |
+| `storefront-from-design` | Translate a page design into commerce blocks composed from drop-ins |
 
 ---
 

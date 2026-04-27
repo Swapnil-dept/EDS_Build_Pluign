@@ -72,16 +72,31 @@ export const ANALYZE_AND_PLAN_TEMPLATE = `
 `.trim();
 // ─── Content Modeling ──────────────────────────────────────────
 export const CONTENT_MODEL_RULES = `
-# Content Modeling Rules (authoring table)
+# Content Modeling Rules
 
+Two authoring surfaces to support:
+
+## 1. Document authoring (Google Docs / Word tables)
 - First row of the block table = block name + optional \`(variant)\`
 - Each subsequent row = one content item (or one key/value pair for config blocks)
-- Keep rows to ≤4 cells — split into multiple rows instead of wide ones
-- Use semantic formatting in the document (headings, lists, links) — EDS preserves it
+- Keep rows to \u22644 cells \u2014 split into multiple rows instead of wide ones
+- Use semantic formatting in the document (headings, lists, links) \u2014 EDS preserves it
 - Images live in their own cell; EDS wraps them in \`<picture>\`
-- Prefer author-friendly models: can a non-developer edit this in Google Docs / Word without copy-pasting weird syntax?
 
-**Anti-patterns:** JSON blobs in cells, ordering-dependent free text, hidden config strings.
+## 2. Universal Editor authoring (aem-boilerplate-xwalk)
+- Expose authorable inputs as typed fields in \`component-models.json\`
+- Use **shared prefixes** to collapse related fields (\`image\`+\`imageAlt\`,
+  \`link\`+\`linkText\`, \`title\`+\`titleType\`)
+- Expose CSS variants as a \`multiselect\` field named \`classes\` (options
+  grouped under a label). Values are applied as classes on the block root.
+- For **repeating children** (cards, tabs, slides, accordion items) use a
+  **container block with item children**: block template declares
+  \`\"filter\": \"<id>\"\`, items use resourceType \`.../block/v1/block/item\`,
+  and \`component-filters.json\` restricts the container's allowed children.
+- Prefer author-friendly models: can a non-developer fill this in without\n  copy-pasting syntax?
+
+**Anti-patterns:** JSON blobs in cells, ordering-dependent free text, hidden
+config strings, one JS file per variant, nested blocks.
 `.trim();
 // ─── Authoring Analysis decision tree ──────────────────────────
 export const AUTHORING_DECISION_TREE = `
@@ -152,30 +167,139 @@ main .my-block.dark { background: var(--dark-color); color: var(--clr-white); }
 `.trim();
 // ─── Universal Editor component model ──────────────────────────
 export const UE_COMPONENT_MODEL_RULES = `
-# Universal Editor Component Model — 3-file configuration
+# Universal Editor Component Model
 
-1. **component-definitions.json** — registers the block in the palette (resourceType \`core/franklin/components/block/v1/block\`)
-2. **component-models.json** — field definitions for the property panel
-3. **component-filters.json** — add the block's id to the \`section\` filter so it shows up in the add menu
+Reference: \`adobe-rnd/aem-boilerplate-xwalk\` and the in-repo
+\`blocks/tabs-card\` and \`blocks/carousel\` samples.
 
-**Common field mappings:**
-| Authoring need | \`component\` | Notes |
+## Per-block combined config: \`blocks/<name>/_<name>.json\`
+
+Each block ships **one JSON file** at \`blocks/<name>/_<name>.json\`
+containing all three keys (definitions + models + filters). At build/deploy
+time these are aggregated into the project-root
+\`component-definitions.json\` / \`component-models.json\` / \`component-filters.json\`.
+
+\`\`\`jsonc
+// blocks/carousel/_carousel.json
+{
+  "definitions": [
+    {
+      "title": "Carousel",
+      "id": "carousel",
+      "plugins": { "xwalk": { "page": {
+        "resourceType": "core/franklin/components/block/v1/block",
+        "template": { "name": "carousel", "model": "carousel", "filter": "carousel-slides" }
+      }}}
+    },
+    {
+      "title": "Carousel Slide",
+      "id": "carousel-slide",
+      "plugins": { "xwalk": { "page": {
+        "resourceType": "core/franklin/components/block/v1/block/item",
+        "template": { "name": "carousel-slide", "model": "carousel-slide" }
+      }}}
+    }
+  ],
+  "models": [
+    { "id": "carousel",       "fields": [ /* block-level \`classes\` variants */ ] },
+    { "id": "carousel-slide", "fields": [ /* image, title, text, link, linkText */ ] }
+  ],
+  "filters": [
+    { "id": "carousel-slides", "components": ["carousel-slide"] }
+  ]
+}
+\`\`\`
+
+## Root-level aggregates (shape authors consume)
+
+**component-definitions.json** \u2014 \`groups[]\` with components:
+\`\`\`json
+{
+  "groups": [
+    { "title": "Blocks", "id": "blocks", "components": [ /* all block definitions */ ] }
+  ]
+}
+\`\`\`
+
+**component-models.json** \u2014 flat array of \`{ id, fields }\`:
+\`\`\`json
+[ { "id": "hero", "fields": [ /* \u2026 */ ] } ]
+\`\`\`
+
+**component-filters.json** \u2014 flat array of \`{ id, components }\`. The
+\`id\` must equal the filter name referenced by the block template
+(not \`<block>-filter\`):
+\`\`\`json
+[
+  { "id": "section", "components": ["text","image","hero","cards"] },
+  { "id": "cards",   "components": ["card"] }
+]
+\`\`\`
+
+## Three resource types
+
+| Kind | resourceType |
+|------|---|
+| Block (container or leaf) | \`core/franklin/components/block/v1/block\` |
+| Item nested inside a block | \`core/franklin/components/block/v1/block/item\` |
+| Default content (text / title / image / button) | \`core/franklin/components/<name>/v1/<name>\` |
+
+## Container blocks (block \u2192 item pattern)
+
+When a block has repeating children (cards, tabs, accordion, carousel,
+tabs-card), model it as a **container block with item children**:
+
+1. Block template includes \`"template": { "name": "Cards", "filter": "cards" }\`
+2. Item definition uses \`resourceType: core/franklin/components/block/v1/block/item\`
+   and \`"template": { "name": "Card", "model": "card" }\`
+3. Add a filter entry \`{ "id": "cards", "components": ["card"] }\` so
+   only \`card\` items can be added inside the \`cards\` block.
+
+Nested containers (e.g. tabs-card \u2192 tab \u2192 card) declare multiple filter
+entries: one for the outer block, one for each level of items.
+
+Do **not** put \`filter\` on an item's template \u2014 only on the container.
+
+## How model fields become the DOM your \`decorate()\` receives
+
+UE serializes each block/item into **rows of cells**. Field names control
+the shape:
+
+- \`image\` + \`imageAlt\` \u2192 cell with \`<picture><img alt="\u2026"></picture>\`
+- \`link\` + \`linkText\` (+ \`linkTitle\` / \`linkType\`) \u2192 cell with \`<a href title class>text</a>\`
+- \`title\` + \`titleType\` \u2192 cell with \`<hN>title</hN>\`
+- \`classes\` (multiselect) \u2192 classes on the block root (not a cell)
+- Every other field \u2192 one cell carrying its content
+
+So the authoring model, the DOM EDS serves, and your \`decorate()\` must
+agree on the row/cell shape. Design them together.
+
+## Common field mappings
+
+| Authoring need | component | Notes |
 |---|---|---|
-| Image | \`reference\` (name: \`image\`) | Pair with \`imageAlt\` → collapses to \`<img alt>\` |
-| Link / URL | \`aem-content\` (name: \`link\`) | Pair with \`linkText\`/\`linkTitle\` |
-| Rich text | \`richtext\` | Headings/lists/inline links |
-| Short text | \`text\` | Titles, labels |
-| Long plain text | \`textarea\` | Descriptions |
-| Heading level | \`select\` h1–h6 | Pair with \`title\` → collapses to \`<hN>title</hN>\` |
-| Variants (CSS classes) | \`multiselect\` (name: \`classes\`) | Values become classes on block div |
+| Single-line text | \`text\` | UE canonical name (not \`text-input\`) |
+| Multi-line plain text | \`textarea\` | UE canonical name (not \`text-area\`) |
+| Rich text | \`richtext\` | Headings / lists / inline links |
+| Image | \`reference\` (name: \`image\`) | Pair with \`imageAlt\` \u2192 \`<picture><img alt>\` |
+| Link / URL | \`aem-content\` (name: \`link\`) | Pair with \`linkText\`/\`linkTitle\`/\`linkType\` |
+| Heading level | \`select\` h1\u2013h6 | Pair with \`title\` \u2192 \`<hN>title</hN>\` |
+| CSS variants | \`multiselect\` (name: **\`classes\`**) | Values applied as classes on block root |
 | Boolean | \`boolean\` (valueType \`boolean\`) | |
+| Number | \`number\` (valueType \`number\`) | |
 
-**Semantic collapsing:** field-name prefixes merge into one DOM cell:
-- \`image\` + \`imageAlt\` → \`<picture><img alt="…"></picture>\`
-- \`link\` + \`linkText\` + \`linkTitle\` + \`linkType\` → \`<a href title class>text</a>\`
-- \`title\` + \`titleType\` → \`<hN>title</hN>\`
+## Semantic collapsing (shared prefixes) \u2014 recap
 
-**Container blocks** (cards/tabs/carousel) use \`filter\` in the template (not \`model\`) and add a matching entry to component-filters.json.
+- \`image\` + \`imageAlt\` \u2192 \`<picture><img alt="\u2026"></picture>\`
+- \`link\` + \`linkText\` + \`linkTitle\` + \`linkType\` \u2192 \`<a href title class>text</a>\`
+- \`title\` + \`titleType\` \u2192 \`<hN>title</hN>\`
+
+## Variants via \`classes\` (preferred)
+
+Instead of authoring variants as \`Block Name (dark)\` in a table cell,
+expose them as a \`multiselect\` field named \`classes\` with grouped
+options. UE writes the selected values as classes on the block root so
+the same CSS targeting pattern (\`.my-block.dark\`) still applies.
 `.trim();
 // ─── Code Review self-review checklist ────────────────────────
 export const CODE_REVIEW_CHECKLIST = `

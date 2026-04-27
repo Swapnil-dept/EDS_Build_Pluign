@@ -262,6 +262,10 @@ export function validateBlock(blockName, files) {
             }
             else {
                 const validTypes = [
+                    // UE canonical (aem-boilerplate-xwalk)
+                    'text',
+                    'textarea',
+                    // Legacy aliases (still accepted)
                     'text-input',
                     'text-area',
                     'richtext',

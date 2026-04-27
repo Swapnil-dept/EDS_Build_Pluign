@@ -33,6 +33,17 @@ import { registerSearchBlockCollection } from './tools/search-block-collection.j
 import { registerEdsScripts } from './tools/eds-scripts.js';
 import { registerGenerateBlockFromDesign } from './tools/generate-block-from-design.js';
 
+// Tools — Storefront (Adobe Commerce drop-ins)
+import { registerScaffoldStorefrontProject } from './tools/scaffold-storefront-project.js';
+import { registerAddDropin } from './tools/add-dropin.js';
+import { registerLookupDropin } from './tools/lookup-dropin.js';
+import { registerCustomizeDropinSlot } from './tools/customize-dropin-slot.js';
+import { registerStyleDropin } from './tools/style-dropin.js';
+import { registerScaffoldCommerceBlock } from './tools/scaffold-commerce-block.js';
+import { registerValidateStorefront } from './tools/validate-storefront.js';
+import { registerEdsStorefrontConfig } from './tools/eds-storefront-config.js';
+import { registerCommerceEventsGuide } from './tools/commerce-events-guide.js';
+
 // Resources
 import { registerResources } from './resources/eds-resources.js';
 
@@ -63,6 +74,17 @@ registerScaffoldProject(server);  // scaffold_project — new project setup guid
 registerEdsConfig(server);        // eds_config — configuration file templates
 registerEdsScripts(server);       // eds_scripts_guide — scripts.js customization
 
+// Tools: Storefront (Adobe Commerce drop-ins)
+registerScaffoldStorefrontProject(server); // scaffold_storefront_project
+registerAddDropin(server);                 // add_dropin
+registerLookupDropin(server);              // lookup_dropin
+registerCustomizeDropinSlot(server);       // customize_dropin_slot
+registerStyleDropin(server);               // style_dropin
+registerScaffoldCommerceBlock(server);     // scaffold_commerce_block
+registerValidateStorefront(server);        // validate_storefront
+registerEdsStorefrontConfig(server);       // eds_storefront_config
+registerCommerceEventsGuide(server);       // commerce_events_guide
+
 // Resources: Documentation (available as context to the LLM)
 registerResources(server);
 
@@ -81,8 +103,13 @@ async function main() {
   console.error('          lookup_block, search_block_collection, check_performance,');
   console.error('          generate_block_from_design,');
   console.error('          scaffold_project, eds_config, eds_scripts_guide');
-  console.error('   Resources: eds-coding-standards, eds-block-guide, eds-cheatsheet, eds-adobe-skills');
-  console.error('   Prompts: new-block, fix-block, design-to-block');
+  console.error('   Storefront tools: scaffold_storefront_project, add_dropin, lookup_dropin,');
+  console.error('                     customize_dropin_slot, style_dropin, scaffold_commerce_block,');
+  console.error('                     validate_storefront, eds_storefront_config, commerce_events_guide');
+  console.error('   Resources: eds-coding-standards, eds-block-guide, eds-cheatsheet, eds-adobe-skills,');
+  console.error('              eds-storefront-architecture, eds-storefront-dropins, eds-storefront-sdk');
+  console.error('   Prompts: new-block, fix-block, design-to-block,');
+  console.error('            new-storefront-project, add-and-customize-dropin, storefront-from-design');
   console.error('   CLI: eds-validate (block validator/linter)');
 }
 

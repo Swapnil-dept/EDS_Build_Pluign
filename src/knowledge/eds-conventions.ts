@@ -15,7 +15,8 @@ AEM Edge Delivery Services project structure:
 ├── blocks/                    # Block components
 │   └── <block-name>/
 │       ├── <block-name>.js    # ESM module with default decorate() export
-│       └── <block-name>.css   # Block-scoped styles
+│       ├── <block-name>.css   # Block-scoped styles
+│       └── _<block-name>.json # Universal Editor config — definitions + models + filters combined
 ├── scripts/
 │   ├── aem.js                 # Core EDS framework (DO NOT MODIFY)
 │   ├── scripts.js             # Global orchestration: loadEager / loadLazy / loadDelayed
@@ -30,9 +31,9 @@ AEM Edge Delivery Services project structure:
 ├── paths.json                 # (optional) URL path mappings
 ├── redirects.xlsx             # (optional) redirect rules spreadsheet
 ├── headers.xlsx               # (optional) custom HTTP headers
-├── component-models.json      # Block field definitions (Universal Editor)
-├── component-definitions.json # Block registration for UE
-├── component-filters.json     # Allowed children per container block
+├── component-models.json      # (aggregated) Block field definitions — built from blocks/*/_<block>.json
+├── component-definitions.json # (aggregated) Block registration — built from blocks/*/_<block>.json
+├── component-filters.json     # (aggregated) Allowed children — built from blocks/*/_<block>.json
 ├── robots.txt                 # Search engine crawling rules
 ├── sitemap.xml                # (auto-generated or custom) site map
 └── .helix/                    # (optional) Helix configuration
@@ -118,16 +119,20 @@ When testing blocks locally with test.html:
 // ─── Block DOM Pipeline ─────────────────────────────────────────
 
 export const BLOCK_DOM_PIPELINE = `
-## Content-to-DOM Pipeline
+## Content-to-DOM Pipeline (how authored data becomes HTML)
 
-Authors create blocks as **tables** in Google Docs or Word:
+There are **two authoring surfaces** that feed the same runtime DOM shape:
 
-| Block Name (variant) |
-|---|
-| Cell 1 | Cell 2 |
-| Cell 3 | Cell 4 |
+### A. Document authoring (Google Docs / SharePoint Word)
+Authors create blocks as **tables**:
 
-This becomes:
+| Block Name (variant) |      |
+|----------------------|------|
+| Cell 1               | Cell 2 |
+| Cell 3               | Cell 4 |
+
+On publish, Helix converts the doc → semantic HTML and saves it at
+\`<path>.plain.html\`. The table becomes:
 
 \`\`\`html
 <div class="block-name variant">
@@ -142,17 +147,46 @@ This becomes:
 </div>
 \`\`\`
 
-### Variant handling
-- \`Block Name (dark, wide)\` → class="block-name dark wide"
-- Multi-word variants are hyphenated: "super wide" → "super-wide"
-- The framework wraps each block: \`<div class="block-name-wrapper">\`
+### B. Universal Editor authoring (structured fields)
+Authors fill in the typed fields defined in \`_<block>.json\` (models).
+UE serializes each component instance (or item inside a container block)
+into the **same row/cell shape** the loader expects \u2014 this is why field
+names matter:
 
-### The decorate function receives this DOM and transforms it:
-1. Extract content from the generic div structure
-2. Build semantic HTML (lists, articles, nav, etc.)
+- \`image\` + \`imageAlt\` \u2192 a cell containing \`<picture><img alt="\u2026"></picture>\`
+- \`link\` + \`linkText\` \u2192 a cell containing \`<a href="\u2026">linkText</a>\`
+- \`title\` + \`titleType\` \u2192 a cell containing \`<hN>title</hN>\`
+- \`classes\` (multiselect) \u2192 classes added to the block root div
+- Every other field \u2192 a cell with that field's content (text / richtext / number)
+
+A container block (e.g. carousel, tabs-card, cards) renders each **item**
+as one top-level row inside the block, and items may themselves contain
+nested item rows (tabs \u2192 cards).
+
+### Runtime loading sequence (aem.js)
+1. Browser requests the page \u2192 Helix returns server-rendered HTML (the divs above).
+2. \`scripts.js\` scans \`main\` for \`section-metadata\`, decorates sections, finds blocks.
+3. For each block, aem.js loads \`blocks/<name>/<name>.js\` + \`<name>.css\` (lazily).
+4. aem.js calls \`export default decorate(block)\` with the block's root div.
+5. Your \`decorate()\` reads the row/cell structure and transforms it into the
+   final semantic DOM (cards, tabs, carousel, etc.).
+6. aem.js removes the \`display:none\` on the block \u2192 user sees the result.
+
+### Variant handling
+- Doc: \`Block Name (dark, wide)\` \u2192 \`class="block-name dark wide"\`
+- UE:  \`classes\` multiselect [Dark, Wide] \u2192 same output
+- Multi-word variants are hyphenated: "super wide" \u2192 "super-wide"
+- EDS wraps each block: \`<div class="block-name-wrapper">\` \u2014 don't style it
+
+### What \`decorate(block)\` must do
+1. Read content from the row/cell structure EDS gives you
+2. Build semantic HTML (lists, articles, nav, etc.) \u2014 **reuse** existing \`<picture>\` / \`<a>\` nodes
 3. Add ARIA attributes for accessibility
 4. Attach event handlers if interactive
-5. Replace original block content with transformed DOM
+5. Replace original block content with the transformed DOM
+
+**Golden rule:** the shape of \`_<block>.json\` models directly determines the
+row/cell shape your \`decorate()\` receives. Design them together.
 `;
 
 // ─── CSS Scoping Rules ──────────────────────────────────────────
@@ -230,38 +264,74 @@ export const LOADING_LIFECYCLE = `
 
 // ─── Component Model Field Types ────────────────────────────────
 
+// Canonical component names match aem-boilerplate-xwalk / Universal Editor.
+// Legacy aliases (text-input, text-area) are still accepted for backward compat.
 export const FIELD_TYPES = [
-  { component: 'text-input',   valueType: 'string',  description: 'Single-line text field' },
-  { component: 'text-area',    valueType: 'string',  description: 'Multi-line text area' },
+  { component: 'text',         valueType: 'string',  description: 'Single-line text field (UE canonical)' },
+  { component: 'textarea',     valueType: 'string',  description: 'Multi-line text area (UE canonical)' },
   { component: 'richtext',     valueType: 'string',  description: 'Rich text editor (HTML output)' },
-  { component: 'reference',    valueType: 'string',  description: 'Asset reference (images, videos)' },
-  { component: 'aem-content',  valueType: 'string',  description: 'Content fragment reference' },
+  { component: 'reference',    valueType: 'string',  description: 'Asset reference (images, videos) — pair with <name>Alt' },
+  { component: 'aem-content',  valueType: 'string',  description: 'Link / content fragment reference — pair with linkText/linkTitle/linkType' },
   { component: 'select',       valueType: 'string',  description: 'Dropdown select (single value)' },
-  { component: 'multiselect',  valueType: 'string[]', description: 'Multi-select dropdown' },
+  { component: 'multiselect',  valueType: 'string[]', description: 'Multi-select dropdown — use name:"classes" to apply CSS variant classes to the block' },
   { component: 'boolean',      valueType: 'boolean', description: 'Toggle switch (true/false)' },
   { component: 'number',       valueType: 'number',  description: 'Numeric input field' },
   { component: 'date-input',   valueType: 'string',  description: 'Date picker' },
   { component: 'container',    valueType: 'object',  description: 'Multi-field container for repeatable groups' },
-  { component: 'tab',          valueType: 'object',  description: 'Tab group for organizing fields' },
+  { component: 'tab',          valueType: 'object',  description: 'Tab group for organizing fields in the property panel' },
 ];
+
+// Legacy → UE canonical mapping. Prefer the canonical name in new code.
+export const FIELD_TYPE_ALIASES: Record<string, string> = {
+  'text-input': 'text',
+  'text-area': 'textarea',
+};
+
+export function normalizeFieldType(t: string): string {
+  return FIELD_TYPE_ALIASES[t] ?? t;
+}
 
 // ─── Field Collapse Conventions (Premium — tribal knowledge) ────
 // Adobe docs mention field collapse briefly but don't provide
 // this clean lookup table. Curated from production experience.
 
 export const FIELD_COLLAPSE_RULES = `
-## Field Collapse Conventions
+## Field Collapse Conventions (Universal Editor)
 
-When related fields share a prefix, EDS collapses them into single DOM elements:
+When related fields share a prefix, UE collapses them into single DOM elements:
 
 | Fields | Collapsed DOM |
 |--------|---------------|
-| image + imageAlt | \`<img src="..." alt="...">\` wrapped in \`<picture>\` |
+| image + imageAlt | \`<picture>…<img src="..." alt="..."></picture>\` |
 | link + linkText | \`<a href="link">linkText</a>\` |
+| link + linkText + linkTitle | \`<a href="link" title="linkTitle">linkText</a>\` |
 | link + linkText + linkType | \`<a href="link" class="linkType">linkText</a>\` |
-| link + linkTitle | \`<a href="link" title="linkTitle">...</a>\` |
+| title + titleType | \`<hN>title</hN>\` where N comes from titleType (h1–h6) |
 
 This is automatic — no code needed. Just name fields with matching prefixes.
+
+## CSS Variants via \`classes\` (multiselect)
+
+Add a \`multiselect\` field named **\`classes\`** to let authors toggle CSS variants
+on the block. Values are applied as classes on the block's root div:
+
+\`\`\`json
+{
+  "component": "multiselect",
+  "name": "classes",
+  "label": "Block Variants",
+  "options": [
+    { "name": "Block Styles", "children": [
+      { "name": "Dark", "value": "dark" },
+      { "name": "Compact", "value": "compact" }
+    ]}
+  ]
+}
+\`\`\`
+
+Selecting "Dark" renders \`<div class="my-block dark">…</div>\` — target in CSS
+with \`.my-block.dark { … }\`. This is the canonical pattern used across
+aem-boilerplate-xwalk blocks (hero, cards, tabs-card, …).
 `;
 
 // ─── Configuration Files (Premium — production templates) ───────
@@ -425,31 +495,46 @@ export const BLOCK_PATTERNS: Record<string, {
   fields: Array<{ name: string; type: string; label: string }>;
   cssHint: string;
   jsHint: string;
+  /** If defined, this is a container block with nested item(s) (UE block/item pattern). */
+  items?: Array<{
+    id: string;
+    title: string;
+    filterId?: string;
+    fields: Array<{ name: string; type: string; label: string }>;
+  }>;
 }> = {
   hero: {
     description: 'Full-width banner with image background, heading, text, and CTA button',
     fields: [
       { name: 'image', type: 'reference', label: 'Background Image' },
-      { name: 'imageAlt', type: 'text-input', label: 'Image Alt Text' },
-      { name: 'heading', type: 'text-input', label: 'Heading' },
+      { name: 'imageAlt', type: 'text', label: 'Image Alt Text' },
+      { name: 'heading', type: 'text', label: 'Heading' },
       { name: 'text', type: 'richtext', label: 'Body Text' },
-      { name: 'link', type: 'text-input', label: 'CTA URL' },
-      { name: 'linkText', type: 'text-input', label: 'CTA Label' },
+      { name: 'link', type: 'aem-content', label: 'CTA URL' },
+      { name: 'linkText', type: 'text', label: 'CTA Label' },
     ],
     cssHint: 'Use min-height: 400px, background-size: cover, overlay for text readability',
     jsHint: 'Extract picture from first cell, move to background, wrap text content in .hero-content',
   },
   cards: {
-    description: 'Grid of cards with image, title, description, and optional link',
-    fields: [
-      { name: 'image', type: 'reference', label: 'Card Image' },
-      { name: 'imageAlt', type: 'text-input', label: 'Image Alt Text' },
-      { name: 'title', type: 'text-input', label: 'Card Title' },
-      { name: 'description', type: 'richtext', label: 'Card Description' },
-      { name: 'link', type: 'text-input', label: 'Card Link' },
-    ],
+    description: 'Grid of cards (UE container block with nested "card" items)',
+    fields: [],
     cssHint: 'CSS Grid with auto-fill: minmax(300px, 1fr), gap: 1rem',
-    jsHint: 'Convert rows to <ul><li> elements, extract picture + content per card',
+    jsHint: 'Iterate block.children as cards, extract picture + content per card, convert to <ul><li>',
+    items: [
+      {
+        id: 'card',
+        title: 'Card',
+        fields: [
+          { name: 'image', type: 'reference', label: 'Card Image' },
+          { name: 'imageAlt', type: 'text', label: 'Image Alt Text' },
+          { name: 'title', type: 'text', label: 'Card Title' },
+          { name: 'description', type: 'richtext', label: 'Card Description' },
+          { name: 'link', type: 'aem-content', label: 'Card Link' },
+          { name: 'linkText', type: 'text', label: 'Card Link Text' },
+        ],
+      },
+    ],
   },
   columns: {
     description: 'Multi-column layout (2-4 columns) for side-by-side content',
@@ -460,32 +545,53 @@ export const BLOCK_PATTERNS: Record<string, {
     jsHint: 'Add columns-{n}-cols class based on cell count in first row',
   },
   accordion: {
-    description: 'Expandable/collapsible content sections with headers',
-    fields: [
-      { name: 'heading', type: 'text-input', label: 'Section Title' },
-      { name: 'content', type: 'richtext', label: 'Section Content' },
-    ],
+    description: 'Expandable/collapsible content sections (UE container block with nested "accordion-item")',
+    fields: [],
     cssHint: 'Use details/summary for native a11y, or custom with aria-expanded',
-    jsHint: 'Convert rows to <details><summary>heading</summary>content</details>',
+    jsHint: 'Iterate block.children and render each as <details><summary>heading</summary>content</details>',
+    items: [
+      {
+        id: 'accordion-item',
+        title: 'Accordion Item',
+        fields: [
+          { name: 'heading', type: 'text', label: 'Section Title' },
+          { name: 'content', type: 'richtext', label: 'Section Content' },
+        ],
+      },
+    ],
   },
   tabs: {
-    description: 'Tabbed interface switching between content panels',
-    fields: [
-      { name: 'label', type: 'text-input', label: 'Tab Label' },
-      { name: 'content', type: 'richtext', label: 'Tab Content' },
-    ],
+    description: 'Tabbed interface (UE container block with nested "tab" items)',
+    fields: [],
     cssHint: 'Flex row for tab bar, hidden panels with .active toggle',
-    jsHint: 'Build tab buttons from first cells, panels from second cells, manage aria-selected',
+    jsHint: 'Build tab buttons from each item\u2019s title, panels from its content, manage aria-selected',
+    items: [
+      {
+        id: 'tab',
+        title: 'Tab',
+        fields: [
+          { name: 'title', type: 'text', label: 'Tab Title' },
+          { name: 'content', type: 'richtext', label: 'Tab Content' },
+        ],
+      },
+    ],
   },
   carousel: {
-    description: 'Horizontal scrolling gallery with navigation controls',
-    fields: [
-      { name: 'image', type: 'reference', label: 'Slide Image' },
-      { name: 'imageAlt', type: 'text-input', label: 'Image Alt Text' },
-      { name: 'caption', type: 'text-input', label: 'Slide Caption' },
-    ],
+    description: 'Horizontal scrolling gallery (UE container block with nested "slide" items)',
+    fields: [],
     cssHint: 'Scroll-snap with overflow-x: auto, hide scrollbar, prev/next buttons',
     jsHint: 'Wrap slides in scroll container, create nav buttons, use scrollTo with behavior: smooth',
+    items: [
+      {
+        id: 'slide',
+        title: 'Slide',
+        fields: [
+          { name: 'image', type: 'reference', label: 'Slide Image' },
+          { name: 'imageAlt', type: 'text', label: 'Image Alt Text' },
+          { name: 'caption', type: 'text', label: 'Slide Caption' },
+        ],
+      },
+    ],
   },
 };
 

@@ -18,6 +18,25 @@ import {
   CODE_REVIEW_CHECKLIST,
   TESTING_MATRIX,
 } from '../knowledge/adobe-skills.js';
+import {
+  STOREFRONT_PROJECT_STRUCTURE,
+  STOREFRONT_HARD_CONSTRAINTS,
+  DROPIN_LIFECYCLE,
+  STOREFRONT_CONFIG_SCHEMA,
+  BACKEND_TYPES,
+} from '../knowledge/storefront-conventions.js';
+import { DROPIN_CATALOG } from '../knowledge/storefront-dropins.js';
+import {
+  SDK_SURFACE,
+  SDK_DESIGN_COMPONENTS,
+  SDK_DESIGN_TOKENS,
+  CONTAINER_SLOT_PATTERN,
+  EVENT_BUS_PATTERN,
+  INITIALIZER_PATTERN,
+  COMPOSITION_RECIPE,
+  SDK_HARD_RULES,
+} from '../knowledge/storefront-sdk.js';
+import { COMMERCE_BLOCKS } from '../knowledge/storefront-blocks.js';
 
 /**
  * Register MCP Resources — static knowledge the IDE's LLM can reference.
@@ -181,6 +200,79 @@ var(--nav-height)         /* Navigation bar height */
             `\n\n---\n\n${CDD_WORKFLOW}\n\n---\n\n${ANALYZE_AND_PLAN_TEMPLATE}\n\n---\n\n${CONTENT_MODEL_RULES}\n\n---\n\n${AUTHORING_DECISION_TREE}\n\n---\n\n${BUILDING_BLOCKS_PATTERNS}\n\n---\n\n${UE_COMPONENT_MODEL_RULES}\n\n---\n\n${TESTING_MATRIX}\n\n---\n\n${CODE_REVIEW_CHECKLIST}\n`,
         },
       ],
+    }),
+  );
+
+  // ─── Storefront Architecture (Public) ───────────────────
+  server.resource(
+    'eds-storefront-architecture',
+    'eds://docs/storefront-architecture',
+    {
+      description: 'EDS + Adobe Commerce architecture: project structure, drop-in lifecycle, configuration files, backend variants (PaaS / ACCS / ACO).',
+      mimeType: 'text/markdown',
+      annotations: { audience: ['assistant'] as const, priority: 0.9 },
+    },
+    async (uri) => ({
+      contents: [{
+        uri: uri.href,
+        mimeType: 'text/markdown',
+        text:
+          `# EDS Commerce Storefront — Architecture\n\n` +
+          `## Project Structure\n\`\`\`\n${STOREFRONT_PROJECT_STRUCTURE}\n\`\`\`\n\n` +
+          `## Hard constraints\n${STOREFRONT_HARD_CONSTRAINTS.map((c) => `- ${c}`).join('\n')}\n\n` +
+          `${DROPIN_LIFECYCLE}\n\n${STOREFRONT_CONFIG_SCHEMA}\n\n` +
+          `## Backends\n${BACKEND_TYPES.map((b) => `- **${b.label}** — ${b.note}`).join('\n')}`,
+      }],
+    }),
+  );
+
+  // ─── Drop-in Catalog (Public) ───────────────────────────
+  server.resource(
+    'eds-storefront-dropins',
+    'eds://docs/storefront-dropins',
+    {
+      description: 'Catalog of all Adobe Commerce drop-ins (B2C + B2B) with packages, containers, slots, events, and suggested EDS block names.',
+      mimeType: 'text/markdown',
+      annotations: { audience: ['assistant'] as const, priority: 0.95 },
+    },
+    async (uri) => ({
+      contents: [{
+        uri: uri.href,
+        mimeType: 'text/markdown',
+        text:
+          `# Adobe Commerce Drop-in Catalog (${DROPIN_CATALOG.length})\n\n` +
+          DROPIN_CATALOG.map((d) =>
+            `## ${d.title} (${d.category.toUpperCase()})\n` +
+            `- **id:** ${d.id}\n- **package:** \`${d.package}\`\n- **block:** \`${d.blockName}\`\n- **purpose:** ${d.purpose}\n` +
+            `- **containers:** ${d.containers.map((c) => c.name).join(', ')}\n` +
+            `- **events:** ${d.events.map((e) => `\`${e.name}\``).join(', ')}\n`,
+          ).join('\n') +
+          `\n\n## Commerce blocks (canonical wrappers)\n\n` +
+          COMMERCE_BLOCKS.map((b) => `- **${b.name}** — ${b.title} · drop-ins: ${b.dropins.join(', ')} · load: ${b.loadStrategy}`).join('\n'),
+      }],
+    }),
+  );
+
+  // ─── Drop-in SDK (Public) ───────────────────────────────
+  server.resource(
+    'eds-storefront-sdk',
+    'eds://docs/storefront-sdk',
+    {
+      description: 'Drop-in SDK reference (@dropins/tools): design system components, design tokens, container/slot pattern, event bus, initializer, composition recipes.',
+      mimeType: 'text/markdown',
+      annotations: { audience: ['assistant'] as const, priority: 0.95 },
+    },
+    async (uri) => ({
+      contents: [{
+        uri: uri.href,
+        mimeType: 'text/markdown',
+        text:
+          `# Drop-in SDK Reference (@dropins/tools)\n\n` +
+          `${SDK_SURFACE}\n\n` +
+          `## Design system components (${SDK_DESIGN_COMPONENTS.length})\n${SDK_DESIGN_COMPONENTS.map((c) => `- ${c}`).join('\n')}\n\n` +
+          `${SDK_DESIGN_TOKENS}\n\n${CONTAINER_SLOT_PATTERN}\n\n${EVENT_BUS_PATTERN}\n\n${INITIALIZER_PATTERN}\n\n${COMPOSITION_RECIPE}\n\n` +
+          `## Hard rules\n${SDK_HARD_RULES.map((r) => `- ${r}`).join('\n')}`,
+      }],
     }),
   );
 }

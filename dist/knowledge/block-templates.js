@@ -146,52 +146,80 @@ ${options?.variant ? `
 }
 `;
 }
-// ─── Component Model JSON ───────────────────────────────────────
+function fieldToModelEntry(f) {
+    const entry = {
+        component: normalizeType(f.type),
+        valueType: getValueType(f.type),
+        name: f.name,
+        label: f.label,
+    };
+    if (f.required)
+        entry.required = true;
+    if (f.multi !== undefined)
+        entry.multi = f.multi;
+    return entry;
+}
+/**
+ * Generate a single entry for component-models.json.
+ * Returns a JSON string of `{ id, fields: [...] }` ready to be appended
+ * to the top-level array in the file.
+ */
 export function generateComponentModel(blockName, fields) {
-    const modelFields = fields.map((f) => {
-        const field = {
-            component: f.type,
-            name: f.name,
-            label: f.label,
-            valueType: getValueType(f.type),
-        };
-        if (f.required)
-            field.required = true;
-        return field;
-    });
     const model = {
         id: blockName,
-        fields: modelFields,
+        fields: fields.map(fieldToModelEntry),
     };
     return JSON.stringify(model, null, 2);
 }
-// ─── Component Definition JSON ──────────────────────────────────
-export function generateComponentDefinition(blockName, title, group) {
-    const def = {
-        title: title || toTitleCase(blockName),
+/**
+ * Generate a single component entry for component-definition.json.
+ *
+ * The canonical file shape is:
+ *   { "groups": [ { "title": "Blocks", "id": "blocks", "components": [ ... ] } ] }
+ *
+ * This generator returns the inner component object ready to append to
+ * `groups[i].components`. Consumers should merge it into the existing
+ * group (default: "Blocks").
+ */
+export function generateComponentDefinition(blockName, titleOrOptions, group) {
+    const opts = typeof titleOrOptions === 'string' || titleOrOptions === undefined
+        ? { title: titleOrOptions, group }
+        : titleOrOptions;
+    const title = opts.title || toTitleCase(blockName);
+    const resourceType = opts.isItem
+        ? 'core/franklin/components/block/v1/block/item'
+        : 'core/franklin/components/block/v1/block';
+    const template = { name: title };
+    const model = opts.model === undefined ? blockName : opts.model;
+    if (model)
+        template.model = model;
+    if (opts.filter)
+        template.filter = opts.filter;
+    const component = {
+        title,
         id: blockName,
         plugins: {
             xwalk: {
                 page: {
-                    resourceType: 'core/franklin/components/block/v1/block',
-                    template: {
-                        name: toTitleCase(blockName),
-                        model: blockName,
-                    },
+                    resourceType,
+                    template,
                 },
             },
         },
     };
-    if (group) {
-        def.group = group;
-    }
-    return JSON.stringify(def, null, 2);
+    return JSON.stringify(component, null, 2);
 }
 // ─── Component Filter JSON ──────────────────────────────────────
+/**
+ * Generate an entry for component-filters.json.
+ * The filter `id` equals the block id (UE convention) \u2014 NOT `<block>-filter`.
+ */
 export function generateComponentFilter(blockName, allowedChildren) {
     const filter = {
-        id: `${blockName}-filter`,
-        components: allowedChildren || ['text', 'image', 'button'],
+        id: blockName,
+        components: allowedChildren && allowedChildren.length > 0
+            ? allowedChildren
+            : ['text', 'image', 'button', 'title'],
     };
     return JSON.stringify(filter, null, 2);
 }
@@ -353,18 +381,25 @@ function toTitleCase(str) {
         .join(' ');
 }
 function getValueType(componentType) {
-    switch (componentType) {
+    switch (normalizeType(componentType)) {
         case 'boolean': return 'boolean';
         case 'number': return 'number';
         case 'multiselect': return 'string[]';
         default: return 'string';
     }
 }
+function normalizeType(t) {
+    if (t === 'text-input')
+        return 'text';
+    if (t === 'text-area')
+        return 'textarea';
+    return t;
+}
 function getSampleValue(field) {
-    switch (field.type) {
+    switch (normalizeType(field.type)) {
         case 'richtext': return `<p>Sample ${field.label.toLowerCase()} content with <strong>formatting</strong></p>`;
-        case 'text-input':
-        case 'text-area': return `Sample ${field.label}`;
+        case 'text':
+        case 'textarea': return `Sample ${field.label}`;
         case 'reference': return `![${field.label}](https://example.com/media_sample.jpeg)`;
         case 'boolean': return 'true';
         case 'number': return '42';

@@ -27,10 +27,12 @@ export function registerScaffoldBlock(server) {
             name: z.string().describe('Field name (camelCase)'),
             type: z
                 .enum([
-                'text-input', 'text-area', 'richtext', 'reference',
+                'text', 'textarea',
+                'text-input', 'text-area', // legacy aliases
+                'richtext', 'reference',
                 'aem-content', 'select', 'multiselect', 'boolean', 'number',
             ])
-                .describe('Field component type for Universal Editor'),
+                .describe('Field component type for Universal Editor (canonical: text, textarea, richtext, reference, aem-content, select, multiselect, boolean, number)'),
             label: z.string().describe('Human-readable field label'),
         }))
             .optional()
@@ -88,7 +90,8 @@ export function registerScaffoldBlock(server) {
                             `1. Copy files to your project's blocks/${blockName}/ folder\n` +
                             `2. Open test.html in a browser to verify the block renders\n` +
                             `3. Run \`aem up\` and add the block table to a test page\n` +
-                            `4. Use \`validate_block\` tool to check for common issues`,
+                            `4. Call \`scaffold_model\` to generate the Universal Editor JSON files (component-models / component-definition / component-filters) — use \`items: [...]\` for container blocks like cards / tabs / accordion\n` +
+                            `5. Use \`validate_block\` to check for common issues`,
                     },
                 ],
             };
