@@ -1,0 +1,21 @@
+# Belt-and-braces — `files` in package.json is the primary allowlist,
+# but .npmignore prevents accidental leaks of dev-only content.
+src/
+node_modules/
+.vscode/
+.github/
+.aem-skills-config.yaml
+blocks/
+examples/
+tsconfig.json
+*.tsbuildinfo
+.DS_Store
+.git/
+.gitignore
+.eslintrc*
+.editorconfig
+*.log
+coverage/
+test/
+tests/
+__tests__/

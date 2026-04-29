@@ -4,6 +4,31 @@ MCP server for AEM Edge Delivery Services development — scaffolding, validatio
 
 ---
 
+## Quick install (for end users)
+
+Once published to npm, add this to your project's `.vscode/mcp.json`:
+
+```jsonc
+{
+  "servers": {
+    "eds-mcp-server": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "github:Swapnil-dept/EDS_Build_Pluign"]
+    }
+  }
+}
+```
+
+That's it. Restart VS Code → Copilot Chat (Agent mode) will discover the tools automatically. No npm account needed.
+
+Pin to a specific release for stability:
+```jsonc
+"args": ["-y", "github:Swapnil-dept/EDS_Build_Pluign#v1.0.0"]
+```
+
+---
+
 ## Prerequisites
 
 - **Node.js** ≥ 18.0.0
@@ -36,7 +61,58 @@ This compiles TypeScript to `dist/` and makes the server executable.
 
 ### Step 4 — Configure VS Code MCP
 
-Create (or update) `.vscode/mcp.json` in your **EDS project workspace**:
+You can wire the server into **any** EDS / Storefront / AEM repo. Pick **one** of the methods below.
+
+#### Option A — Absolute path (simplest, recommended)
+
+In your **target project's** `.vscode/mcp.json` (create the file if missing):
+
+```jsonc
+{
+  "servers": {
+    "eds-mcp-server": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/ABSOLUTE/PATH/TO/EDS_Build_Pluign/dist/index.js"]
+    }
+  }
+}
+```
+
+Replace `/ABSOLUTE/PATH/TO/EDS_Build_Pluign` with the real path on your machine. Use **forward slashes** even on Windows. Verify it works:
+
+```bash
+node /ABSOLUTE/PATH/TO/EDS_Build_Pluign/dist/index.js
+# Should print: 🚀 EDS MCP Server v1.0.0 running on stdio
+# Press Ctrl+C to exit.
+```
+
+#### Option B — `npm link` (system-wide command)
+
+From this repo:
+
+```bash
+cd /path/to/EDS_Build_Pluign
+npm run build
+npm link
+```
+
+This registers `eds-mcp-server` as a global command. Then in any project:
+
+```jsonc
+{
+  "servers": {
+    "eds-mcp-server": {
+      "type": "stdio",
+      "command": "eds-mcp-server"
+    }
+  }
+}
+```
+
+Verify with `which eds-mcp-server`. If it prints a path, the link worked. To uninstall: `npm unlink -g eds-mcp-server`.
+
+#### Option C — Same-workspace (only when this repo IS your target)
 
 ```jsonc
 {
@@ -50,7 +126,17 @@ Create (or update) `.vscode/mcp.json` in your **EDS project workspace**:
 }
 ```
 
-> If the MCP server lives in a different folder than your EDS project, replace `${workspaceFolder}/dist/index.js` with the absolute path to `dist/index.js`.
+> `${workspaceFolder}` resolves to the currently-open VS Code workspace. It will fail in other projects because `dist/index.js` doesn't exist there — use Option A or B instead.
+
+#### Troubleshooting "MCP server not found / not starting"
+
+| Symptom | Fix |
+|---|---|
+| `Error: Cannot find module .../dist/index.js` | Run `npm run build` in this repo. The `dist/` folder is gitignored. |
+| `command not found: eds-mcp-server` (Option B) | Re-run `npm link` after each `npm run build`. Check `npm config get prefix` is on your `$PATH`. |
+| Tools don't appear in Copilot Chat | Restart VS Code after editing `.vscode/mcp.json`. Open the **Output → MCP** panel for stderr logs. |
+| Server starts but no logs | Logs go to **stderr** by design (stdout is reserved for JSON-RPC). Check the MCP output channel, not the terminal. |
+| `EACCES: permission denied` running `dist/index.js` | `chmod 755 dist/index.js dist/cli.js` (the build script does this — re-run `npm run build`). |
 
 ### Step 5 — Verify
 
@@ -76,8 +162,8 @@ If the server is running, Copilot will use the MCP tools automatically.
 
 | Tool | Description |
 |---|---|
-| `scaffold_block` | Generate a complete block file structure (JS, CSS, README, test.html, sample content) |
-| `scaffold_model` | Generate Universal Editor component model files (definitions, models, filters) |
+| `scaffold_block` | Generate the canonical 3-file UE block: `<name>.js` + `<name>.css` + `_<name>.json` (definitions + models + filters combined). Returns README/test.html/sample-content separately as **dev-only** helpers. |
+| `scaffold_model` | Generate the combined `_<block>.json` for an existing block (definitions + models + filters in one file — no more 3-file merge dance). |
 | `scaffold_project` | Step-by-step guide for setting up a new EDS project (standard or repoless) |
 | `generate_block_from_design` | Generate a block from a text description, screenshot, and/or Figma URL |
 | `validate_block` | Validate a block against EDS coding standards and best practices |
@@ -183,6 +269,54 @@ Each block gets a score from 0–100. Exit code `1` on errors (or warnings in `-
 | `npm run inspect` | Launch MCP Inspector for debugging |
 | `npm run lint` | Type-check without emitting |
 | `npm run clean` | Remove `dist/` |
+
+---
+
+## Publishing (maintainers only)
+
+This package is published to npm as **`@swapnil-dept/eds-mcp-server`**.
+
+### One-time setup
+
+1. Create an [npm account](https://www.npmjs.com/signup) and verify your email.
+2. If publishing under a scope you don't own, [create the org](https://www.npmjs.com/org/create) on npm.
+3. `npm login` locally (or generate an automation token at npmjs.com → Access Tokens → Generate New → **Automation**).
+4. **For CI** — add the token to GitHub: repo Settings → Secrets and variables → Actions → New secret named `NPM_TOKEN`.
+
+### Manual release (from your laptop)
+
+```bash
+npm run release:patch   # 1.0.0 → 1.0.1
+npm run release:minor   # 1.0.0 → 1.1.0
+npm run release:major   # 1.0.0 → 2.0.0
+```
+
+Each command runs `prepublishOnly` (clean + build), bumps the version in `package.json`, creates a git tag, publishes to npm, and pushes the tag.
+
+### CI release (recommended)
+
+Push a `vX.Y.Z` tag and `.github/workflows/publish.yml` handles the rest (build → smoke test → publish with [npm provenance](https://docs.npmjs.com/generating-provenance-statements)):
+
+```bash
+npm version patch       # creates v1.0.1 tag locally
+git push --follow-tags  # triggers the workflow
+```
+
+### Inspect the tarball before publishing
+
+```bash
+npm pack --dry-run
+```
+
+Verify only `dist/`, `README.md`, `LICENSE`, and `package.json` ship — never `src/`, `blocks/`, `examples/`, or `.aem-skills-config.yaml`.
+
+### Yanking a bad release
+
+```bash
+npm deprecate @swapnil-dept/eds-mcp-server@1.0.1 "Buggy — use 1.0.2"
+# Or, within 72 hours of publish:
+npm unpublish @swapnil-dept/eds-mcp-server@1.0.1
+```
 
 ---
 

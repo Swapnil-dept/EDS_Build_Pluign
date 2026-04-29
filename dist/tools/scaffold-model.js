@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { generateComponentModel, generateComponentDefinition, generateComponentFilter, } from '../knowledge/block-templates.js';
+import { generateBlockJsonFile, } from '../knowledge/block-templates.js';
 import { FIELD_TYPES, FIELD_COLLAPSE_RULES } from '../knowledge/eds-conventions.js';
 // Accept both UE canonical names (text/textarea) and legacy aliases
 // (text-input/text-area). Generators normalize under the hood.
@@ -38,40 +38,13 @@ export function registerScaffoldModel(server) {
     }, async ({ blockName, title, group, fields, items, allowedChildren }) => {
         try {
             const isContainer = Array.isArray(items) && items.length > 0;
-            // ── component-models.json entries ────────────────────────
-            const modelEntries = [generateComponentModel(blockName, fields)];
-            if (isContainer) {
-                for (const item of items) {
-                    modelEntries.push(generateComponentModel(item.id, item.fields));
-                }
-            }
-            // ── component-definition.json entries ───────────────────
-            const defEntries = [
-                generateComponentDefinition(blockName, {
-                    title,
-                    group,
-                    model: fields.length > 0 ? blockName : null,
-                    filter: isContainer ? blockName : undefined,
-                }),
-            ];
-            if (isContainer) {
-                for (const item of items) {
-                    defEntries.push(generateComponentDefinition(item.id, {
-                        title: item.title,
-                        group,
-                        model: item.id,
-                        isItem: true,
-                    }));
-                }
-            }
-            // ── component-filters.json entries ──────────────────────
-            const filterEntries = [];
-            if (isContainer) {
-                filterEntries.push(generateComponentFilter(blockName, items.map((i) => i.id)));
-            }
-            else if (allowedChildren && allowedChildren.length > 0) {
-                filterEntries.push(generateComponentFilter(blockName, allowedChildren));
-            }
+            // ── Combined block-scoped UE config (canonical) ─────────
+            const blockJson = generateBlockJsonFile(blockName, fields, {
+                title,
+                group,
+                items,
+                allowedChildren,
+            });
             // ── Field-collapse hints ────────────────────────────────
             const collapseHints = [];
             const allFieldNames = [
@@ -110,15 +83,16 @@ export function registerScaffoldModel(server) {
                         text: `✅ Generated Universal Editor model for **${blockName}**` +
                             (isContainer ? ` (container with ${items.length} item type${items.length > 1 ? 's' : ''})` : '') +
                             `\n\n` +
-                            `**Add to \`component-models.json\`** (merge into top-level array):\n` +
-                            `\`\`\`json\n[\n${modelEntries.join(',\n')}\n]\n\`\`\`\n\n` +
-                            `**Add to \`component-definition.json\`** (merge into \`groups[title="${group ?? 'Blocks'}"].components\`):\n` +
-                            `\`\`\`json\n[\n${defEntries.join(',\n')}\n]\n\`\`\`\n\n` +
-                            (filterEntries.length > 0
-                                ? `**Add to \`component-filters.json\`** (merge into top-level array). Also remember to add \`"${blockName}"\` to the existing \`section\` filter:\n` +
-                                    `\`\`\`json\n[\n${filterEntries.join(',\n')}\n]\n\`\`\`\n\n`
-                                : `**\`component-filters.json\`:** no changes required for this leaf block, but add \`"${blockName}"\` to the existing \`section\` filter so authors can add it.\n\n`) +
+                            `**Canonical UE convention:** every block ships **ONE** combined config at ` +
+                            `\`blocks/${blockName}/_${blockName}.json\` containing \`definitions\` + \`models\` + ` +
+                            `\`filters\`. The project build aggregates these into the root ` +
+                            `\`component-definitions.json\` / \`component-models.json\` / \`component-filters.json\` ` +
+                            `— do not hand-edit the root files.\n\n` +
+                            `### \`blocks/${blockName}/_${blockName}.json\`\n` +
+                            `\`\`\`json\n${blockJson}\`\`\`\n\n` +
                             (notes.length > 0 ? `${notes.join('\n\n')}\n\n` : '') +
+                            `**Don't forget:** add \`"${blockName}"\` to the existing \`section\` filter in ` +
+                            `\`component-filters.json\` so authors can drop the block into a section.\n\n` +
                             `**Available field types:**\n${typeTable}\n\n` +
                             FIELD_COLLAPSE_RULES,
                     },

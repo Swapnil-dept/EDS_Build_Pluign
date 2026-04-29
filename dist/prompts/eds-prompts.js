@@ -58,7 +58,8 @@ export function registerPrompts(server) {
         lines.push(`1. \`blocks/${blockName}/${blockName}.js\``);
         lines.push(`2. \`blocks/${blockName}/${blockName}.css\``);
         lines.push(`3. \`blocks/${blockName}/_${blockName}.json\` — combined definitions + models + filters`);
-        lines.push(`4. \`blocks/${blockName}/README.md\``);
+        lines.push('');
+        lines.push(`**Do NOT** commit \`README.md\`, \`test.html\`, or \`sample-content.md\` inside \`blocks/${blockName}/\` — they break the UE block contract. Keep them in \`docs/\`, \`.dev/\`, or your PR description if needed.`);
         return {
             messages: [
                 {

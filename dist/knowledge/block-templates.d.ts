@@ -55,6 +55,27 @@ export declare function generateComponentDefinition(blockName: string, titleOrOp
  * The filter `id` equals the block id (UE convention) \u2014 NOT `<block>-filter`.
  */
 export declare function generateComponentFilter(blockName: string, allowedChildren?: string[]): string;
+/**
+ * Generate the **single** block-scoped UE config file at
+ * `blocks/<blockName>/_<blockName>.json`.
+ *
+ * This is the canonical file shape used by aem-boilerplate-xwalk: each
+ * block ships ONE JSON file that bundles its `definitions`, `models`, and
+ * `filters` together. The project build aggregates every block's
+ * `_<name>.json` into the project-root `component-definitions.json`,
+ * `component-models.json`, and `component-filters.json` — authors never
+ * edit those root files by hand.
+ */
+export declare function generateBlockJsonFile(blockName: string, fields: Array<ModelField>, options?: {
+    title?: string;
+    group?: string;
+    items?: Array<{
+        id: string;
+        title?: string;
+        fields: Array<ModelField>;
+    }>;
+    allowedChildren?: string[];
+}): string;
 export declare function generateSampleContent(blockName: string, fields: Array<{
     name: string;
     type: string;

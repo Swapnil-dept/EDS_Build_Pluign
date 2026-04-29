@@ -1,5 +1,5 @@
 {
-  "name": "eds-mcp-server",
+  "name": "@swapnil-dept/eds-mcp-server",
   "version": "1.0.0",
   "description": "MCP server for AEM Edge Delivery Services development — scaffolding, validation, configuration, and guidance tools for VS Code and Cursor",
   "type": "module",
@@ -24,7 +24,9 @@
     "validate:blocks": "node dist/cli.js",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js",
     "lint": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "keywords": [
     "mcp",
@@ -34,9 +36,25 @@
     "adobe",
     "blocks",
     "helix",
-    "model-context-protocol"
+    "model-context-protocol",
+    "universal-editor",
+    "aem-boilerplate-xwalk",
+    "copilot",
+    "cursor"
   ],
   "license": "MIT",
+  "author": "Swapnil Gaikwad",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Swapnil-dept/EDS_Build_Pluign.git"
+  },
+  "homepage": "https://github.com/Swapnil-dept/EDS_Build_Pluign#readme",
+  "bugs": {
+    "url": "https://github.com/Swapnil-dept/EDS_Build_Pluign/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
@@ -52,3 +70,4 @@
     "typescript": "^5.7.0"
   }
 }
+

@@ -279,6 +279,71 @@ export function generateComponentFilter(
   return JSON.stringify(filter, null, 2);
 }
 
+// ─── Combined `blocks/<name>/_<name>.json` (UE canonical) ──────
+
+/**
+ * Generate the **single** block-scoped UE config file at
+ * `blocks/<blockName>/_<blockName>.json`.
+ *
+ * This is the canonical file shape used by aem-boilerplate-xwalk: each
+ * block ships ONE JSON file that bundles its `definitions`, `models`, and
+ * `filters` together. The project build aggregates every block's
+ * `_<name>.json` into the project-root `component-definitions.json`,
+ * `component-models.json`, and `component-filters.json` — authors never
+ * edit those root files by hand.
+ */
+export function generateBlockJsonFile(
+  blockName: string,
+  fields: Array<ModelField>,
+  options?: {
+    title?: string;
+    group?: string;
+    items?: Array<{ id: string; title?: string; fields: Array<ModelField> }>;
+    allowedChildren?: string[];
+  },
+): string {
+  const items = options?.items ?? [];
+  const isContainer = items.length > 0;
+
+  const definitions: Array<Record<string, unknown>> = [
+    JSON.parse(generateComponentDefinition(blockName, {
+      title: options?.title,
+      group: options?.group,
+      model: fields.length > 0 ? blockName : null,
+      filter: isContainer ? blockName : undefined,
+    })),
+  ];
+  for (const item of items) {
+    definitions.push(JSON.parse(generateComponentDefinition(item.id, {
+      title: item.title,
+      group: options?.group,
+      model: item.id,
+      isItem: true,
+    })));
+  }
+
+  const models: Array<Record<string, unknown>> = [];
+  if (fields.length > 0) {
+    models.push(JSON.parse(generateComponentModel(blockName, fields)));
+  }
+  for (const item of items) {
+    models.push(JSON.parse(generateComponentModel(item.id, item.fields)));
+  }
+
+  const filters: Array<Record<string, unknown>> = [];
+  if (isContainer) {
+    filters.push(JSON.parse(generateComponentFilter(blockName, items.map((i) => i.id))));
+  } else if (options?.allowedChildren && options.allowedChildren.length > 0) {
+    filters.push(JSON.parse(generateComponentFilter(blockName, options.allowedChildren)));
+  }
+
+  const file: Record<string, unknown> = { definitions };
+  if (models.length > 0) file.models = models;
+  if (filters.length > 0) file.filters = filters;
+
+  return `${JSON.stringify(file, null, 2)}\n`;
+}
+
 // ─── Sample Content (Authoring Table) ───────────────────────────
 
 export function generateSampleContent(

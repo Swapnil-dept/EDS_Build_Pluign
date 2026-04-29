@@ -223,6 +223,58 @@ export function generateComponentFilter(blockName, allowedChildren) {
     };
     return JSON.stringify(filter, null, 2);
 }
+// ─── Combined `blocks/<name>/_<name>.json` (UE canonical) ──────
+/**
+ * Generate the **single** block-scoped UE config file at
+ * `blocks/<blockName>/_<blockName>.json`.
+ *
+ * This is the canonical file shape used by aem-boilerplate-xwalk: each
+ * block ships ONE JSON file that bundles its `definitions`, `models`, and
+ * `filters` together. The project build aggregates every block's
+ * `_<name>.json` into the project-root `component-definitions.json`,
+ * `component-models.json`, and `component-filters.json` — authors never
+ * edit those root files by hand.
+ */
+export function generateBlockJsonFile(blockName, fields, options) {
+    const items = options?.items ?? [];
+    const isContainer = items.length > 0;
+    const definitions = [
+        JSON.parse(generateComponentDefinition(blockName, {
+            title: options?.title,
+            group: options?.group,
+            model: fields.length > 0 ? blockName : null,
+            filter: isContainer ? blockName : undefined,
+        })),
+    ];
+    for (const item of items) {
+        definitions.push(JSON.parse(generateComponentDefinition(item.id, {
+            title: item.title,
+            group: options?.group,
+            model: item.id,
+            isItem: true,
+        })));
+    }
+    const models = [];
+    if (fields.length > 0) {
+        models.push(JSON.parse(generateComponentModel(blockName, fields)));
+    }
+    for (const item of items) {
+        models.push(JSON.parse(generateComponentModel(item.id, item.fields)));
+    }
+    const filters = [];
+    if (isContainer) {
+        filters.push(JSON.parse(generateComponentFilter(blockName, items.map((i) => i.id))));
+    }
+    else if (options?.allowedChildren && options.allowedChildren.length > 0) {
+        filters.push(JSON.parse(generateComponentFilter(blockName, options.allowedChildren)));
+    }
+    const file = { definitions };
+    if (models.length > 0)
+        file.models = models;
+    if (filters.length > 0)
+        file.filters = filters;
+    return `${JSON.stringify(file, null, 2)}\n`;
+}
 // ─── Sample Content (Authoring Table) ───────────────────────────
 export function generateSampleContent(blockName, fields, variant) {
     const displayName = toTitleCase(blockName) + (variant ? ` (${variant})` : '');
