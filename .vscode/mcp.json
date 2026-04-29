@@ -2,8 +2,8 @@
   "servers": {
     "eds-mcp-server": {
       "type": "stdio",
-      "command": "node",
-      "args": ["${workspaceFolder}/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "github:Swapnil-dept/EDS_Build_Pluign"]
     }
   }
 }

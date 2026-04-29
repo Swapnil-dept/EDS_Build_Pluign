@@ -104,6 +104,15 @@ registerResources(server);
 registerPrompts(server);
 // ─── Start Server ─────────────────────────────────────────────
 async function main() {
+    // Catch stray writes to stdout that corrupt JSON-RPC
+    process.on('uncaughtException', (err) => {
+        console.error('[eds-mcp-server] Uncaught exception:', err);
+        process.exit(1);
+    });
+    process.on('unhandledRejection', (reason) => {
+        console.error('[eds-mcp-server] Unhandled rejection:', reason);
+        process.exit(1);
+    });
     const transport = new StdioServerTransport();
     await server.connect(transport);
     // Log to stderr — stdout is reserved for JSON-RPC
@@ -129,7 +138,8 @@ async function main() {
     console.error('   CLI: eds-validate (block validator/linter)');
 }
 main().catch((error) => {
-    console.error('Fatal error:', error);
+    console.error('[eds-mcp-server] Fatal error:', error);
+    console.error('[eds-mcp-server] Node:', process.version, '| Platform:', process.platform);
     process.exit(1);
 });
 //# sourceMappingURL=index.js.map
