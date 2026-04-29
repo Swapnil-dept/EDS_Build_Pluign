@@ -29,6 +29,7 @@ import { registerLookupBlock } from './tools/lookup-block.js';
 import { registerSearchBlockCollection } from './tools/search-block-collection.js';
 import { registerEdsScripts } from './tools/eds-scripts.js';
 import { registerGenerateBlockFromDesign } from './tools/generate-block-from-design.js';
+import { registerProjectSummary } from './tools/project-summary.js';
 // Tools — Project routing (smart detection)
 import { registerDetectProjectType } from './tools/detect-project-type.js';
 // Tools — Storefront (Adobe Commerce drop-ins)
@@ -71,6 +72,7 @@ registerLookupBlock(server); // lookup_block — search block patterns & referen
 registerSearchBlockCollection(server); // search_block_collection — search Adobe Block Collection & Block Party
 registerPerformanceCheck(server); // check_performance — analyze block performance
 registerGenerateBlockFromDesign(server); // generate_block_from_design — text / image / Figma → block (Adobe CDD)
+registerProjectSummary(server); // project_summary — create/update workspace summary and session handoff
 // Tools: Project & Configuration
 registerScaffoldProject(server); // scaffold_project — new project setup guide
 registerEdsConfig(server); // eds_config — configuration file templates
@@ -119,7 +121,7 @@ async function main() {
     console.error('🚀 EDS MCP Server v1.0.0 running on stdio');
     console.error('   Tools: scaffold_block, scaffold_model, validate_block, explain_dom,');
     console.error('          lookup_block, search_block_collection, check_performance,');
-    console.error('          generate_block_from_design,');
+    console.error('          generate_block_from_design, project_summary,');
     console.error('          scaffold_project, eds_config, eds_scripts_guide');
     console.error('   Routing: detect_project_type (call first to decide EDS vs storefront)');
     console.error('   Storefront tools: scaffold_storefront_project, add_dropin, lookup_dropin,');

@@ -291,19 +291,19 @@ export function detectProjectType(input) {
     // Recommended tools
     const recommendedTools = [];
     if (type === 'aemaacs') {
-        recommendedTools.push('ensure_agents_md', 'aem_skills_index', 'scaffold_aem_component', 'aem_best_practices', 'aem_migration_pattern', 'aem_dispatcher_config');
+        recommendedTools.push('project_summary', 'ensure_agents_md', 'aem_skills_index', 'scaffold_aem_component', 'aem_best_practices', 'aem_migration_pattern', 'aem_dispatcher_config');
     }
     else if (type === 'aem65lts') {
-        recommendedTools.push('ensure_agents_md', 'aem65_skills_index', 'aem65_replication', 'aem65_workflow', 'aem_dispatcher_config');
+        recommendedTools.push('project_summary', 'ensure_agents_md', 'aem65_skills_index', 'aem65_replication', 'aem65_workflow', 'aem_dispatcher_config');
     }
     else if (type === 'storefront') {
-        recommendedTools.push('lookup_dropin', 'add_dropin', 'scaffold_commerce_block', 'customize_dropin_slot', 'style_dropin', 'eds_storefront_config', 'commerce_events_guide', 'validate_storefront');
+        recommendedTools.push('project_summary', 'lookup_dropin', 'add_dropin', 'scaffold_commerce_block', 'customize_dropin_slot', 'style_dropin', 'eds_storefront_config', 'commerce_events_guide', 'validate_storefront');
     }
     else if (type === 'eds') {
-        recommendedTools.push('lookup_block', 'scaffold_block', 'scaffold_model', 'generate_block_from_design', 'validate_block', 'check_performance', 'eds_config', 'eds_scripts_guide');
+        recommendedTools.push('project_summary', 'lookup_block', 'scaffold_block', 'scaffold_model', 'generate_block_from_design', 'validate_block', 'check_performance', 'eds_config', 'eds_scripts_guide');
     }
     else {
-        recommendedTools.push('scaffold_project', 'scaffold_storefront_project');
+        recommendedTools.push('project_summary', 'scaffold_project', 'scaffold_storefront_project');
     }
     return {
         type,

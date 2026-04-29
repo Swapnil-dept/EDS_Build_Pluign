@@ -2,6 +2,9 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { HARD_CONSTRAINTS } from '../knowledge/eds-conventions.js';
 
+const PROJECT_SUMMARY_WORKFLOW =
+  'Create or refresh a workspace summary file at `.project-summary.md` (or `PROJECT_SUMMARY.md`) by calling `project_summary` with the same workspace snapshots plus any global files you have (for example `styles/styles.css`, `scripts/scripts.js`, `scripts/initializers.js`). At the end of the task, call `project_summary` again with `existingSummary` + `sessionChanges` and update the same file so the next session starts with current architecture, theme, security/auth, and runtime notes.';
+
 /**
  * Register MCP Prompts — pre-built templates for common EDS development tasks.
  * These appear as slash commands in IDEs (e.g., /mcp.eds.new-block).
@@ -36,6 +39,8 @@ export function registerPrompts(server: McpServer) {
       lines.push(`Create an AEM EDS block named "${blockName}" that ${description}.`);
       lines.push('');
       lines.push('**Step 0 (always first):** call `detect_project_type` with snapshots of the workspace (package.json, ls of root/scripts/blocks/scripts/__dropins__, head.html, config.json). If it returns `storefront`, STOP — use `scaffold_commerce_block` and the storefront prompts instead. Continue below only if it returns `eds`.');
+      lines.push('');
+      lines.push(`**Project summary rule:** ${PROJECT_SUMMARY_WORKFLOW}`);
       lines.push('');
       lines.push('Target: aem-boilerplate-xwalk (Universal Editor authoring).');
       lines.push('');
@@ -99,6 +104,7 @@ export function registerPrompts(server: McpServer) {
             type: 'text' as const,
             text:
               `Fix this EDS block issue for "${blockName}": ${issue}\n\n` +
+              `**Project summary rule:** ${PROJECT_SUMMARY_WORKFLOW}\n\n` +
               `Check against core EDS rules and Universal Editor conventions ` +
               `(aem-boilerplate-xwalk):\n` +
               `${HARD_CONSTRAINTS.slice(0, 6).map((c) => `- ${c}`).join('\n')}\n` +
@@ -141,6 +147,7 @@ export function registerPrompts(server: McpServer) {
               (figmaUrl ? `**Figma:** ${figmaUrl}\n` : '') +
               `\n` +
               `**Step 0 (always first):** call \`detect_project_type\` with workspace snapshots. If it returns \`storefront\`, switch to the \`storefront-from-design\` prompt — commerce pages must be composed from drop-ins, not vanilla blocks.\n\n` +
+              `**Project summary rule:** ${PROJECT_SUMMARY_WORKFLOW}\n\n` +
               `Steps to follow (Adobe CDD workflow):\n` +
               `1. Call \`generate_block_from_design\` with the same inputs to get the workflow outline, vision-analysis prompt, Figma-fetch recipe (if any), and a baseline scaffold.\n` +
               `2. Execute the vision-analysis prompt against the image(s) / Figma export — produce structure, fields, variants, responsive behavior, interactivity, design tokens, and acceptance criteria.\n` +
@@ -186,6 +193,7 @@ export function registerPrompts(server: McpServer) {
             text:
               `Bootstrap a new EDS + Adobe Commerce storefront named "${siteName}".\n\n` +
               `**Step 0 (if a project already exists in the workspace):** call \`detect_project_type\` first. If it reports \`eds\` or \`storefront\`, confirm with the user before overwriting. If \`unknown\` or empty workspace, proceed.\n\n` +
+              `**Project summary rule:** ${PROJECT_SUMMARY_WORKFLOW}\n\n` +
               `Steps:\n` +
               `1. Call \`scaffold_storefront_project\` with siteName="${siteName}", backend="${backend ?? 'paas'}"${dropins ? `, dropins=[${dropins.split(',').map((s) => `"${s.trim()}"`).join(', ')}]` : ''}.\n` +
               `2. Execute the install + postinstall steps it returns.\n` +
@@ -220,6 +228,7 @@ export function registerPrompts(server: McpServer) {
             text:
               `Add the **${dropin}** drop-in to this storefront and brand it.\n\n` +
               `**Step 0 (always first):** call \`detect_project_type\` with workspace snapshots. If type is not \`storefront\`, run \`scaffold_storefront_project\` first — you cannot add drop-ins to a vanilla EDS project.\n\n` +
+              `**Project summary rule:** ${PROJECT_SUMMARY_WORKFLOW}\n\n` +
               `Steps:\n` +
               `1. \`lookup_dropin\` with query="${dropin}" — review containers, slots, and events.\n` +
               `2. \`add_dropin\` with dropin="${dropin}" — install + wire initializer.\n` +
@@ -259,6 +268,7 @@ export function registerPrompts(server: McpServer) {
               (imageRefs ? `**Images:** ${imageRefs}\n` : '') +
               (figmaUrl ? `**Figma:** ${figmaUrl}\n` : '') + '\n' +
               `**Step 0 (always first):** call \`detect_project_type\`. If not \`storefront\`, run \`scaffold_storefront_project\` before continuing.\n\n` +
+              `**Project summary rule:** ${PROJECT_SUMMARY_WORKFLOW}\n\n` +
               `Steps:\n` +
               `1. Identify which drop-in(s) the page needs (cart, checkout, pdp, product-discovery, …) — call \`lookup_dropin\` for each candidate.\n` +
               `2. For each drop-in, decide between **slot overrides** (small UI tweaks inside the dropin layout) and **container composition** (custom layout assembled from individual containers like ProductGallery + ProductPrice + custom CTA).\n` +
@@ -293,6 +303,7 @@ export function registerPrompts(server: McpServer) {
           text:
             `Create an AEM as a Cloud Service component named "${componentName}" that ${description}.${extendsCore ? `\nExtend the Core Component "${extendsCore}".` : ''}\n\n` +
             `**Step 0 (always first):** call \`detect_project_type\` with snapshots of the workspace. Pass \`pomXml\`, \`aemSkillsConfigYaml\`, and listings of \`ui.apps/\`, \`core/\`, \`dispatcher/\`. If it does NOT return \`aemaacs\`, STOP.\n\n` +
+            `**Project summary rule:** ${PROJECT_SUMMARY_WORKFLOW}\n\n` +
             `**Step 1:** if no \`AGENTS.md\` exists at the workspace root, call \`ensure_agents_md\` first. Write the AGENTS.md, CLAUDE.md, and \`.aem-skills-config.yaml\` it returns. Wait for the user to fill in \`.aem-skills-config.yaml\` (project, package, group, configured: true).\n\n` +
             `**Step 2:** read \`.aem-skills-config.yaml\` — it is the **single source of truth**. Do not infer project / package / group from the file system or pom.xml.\n\n` +
             `**Step 3:** ask the user to **confirm the dialog field list** verbatim before scaffolding. No extras, no renames.\n\n` +
@@ -320,6 +331,7 @@ export function registerPrompts(server: McpServer) {
           text:
             `Migrate the **${pattern}** pattern to AEM as a Cloud Service.\n\n` +
             `**Step 0:** call \`detect_project_type\` and confirm the workspace is \`aemaacs\`. If \`AGENTS.md\` is missing, run \`ensure_agents_md\` first.\n\n` +
+            `**Project summary rule:** ${PROJECT_SUMMARY_WORKFLOW}\n\n` +
             `**Step 1:** call \`aem_migration_pattern\` with \`pattern: "${pattern}"\` and \`source: "${source ?? 'manual'}"\`. Follow the discovery flow it prints. **One pattern per session** — refuse to fix a different pattern in this same chat.\n\n` +
             `**Step 2:** read the best-practices module the tool points to **before** editing any code. Use \`aem_best_practices\` if you need the index again.\n\n` +
             `**Step 3:** for each target file: read source → classify per the module → apply transformation steps in order → run lints / unit tests → next file.\n\n` +
@@ -347,6 +359,7 @@ export function registerPrompts(server: McpServer) {
           text:
             `Help with this AEMaaCS Dispatcher task: ${question}\n\n` +
             `**Step 0:** confirm the workspace is \`aemaacs\` via \`detect_project_type\` (pass \`dispatcherDirListing\` so the score reflects it).\n\n` +
+            `**Project summary rule:** ${PROJECT_SUMMARY_WORKFLOW}\n\n` +
             `**Step 1:** call \`aem_dispatcher_config\` with \`intent: "${intent}"\` and the user question. Follow the specialist guidance it returns.\n\n` +
             `**Step 2:** for config edits, validate locally with the Dispatcher SDK before committing:\n\`\`\`bash\ncd dispatcher && bin/validator.sh -d out src/conf.dispatcher.d\n\`\`\`\n\n` +
             `**Step 3:** never widen the deny-by-default filter farm without explicit justification. Never expose \`/system/\`, \`/crx/\`, \`/etc/\`, \`/apps/\`, \`/var/\` from publish vhosts.`,

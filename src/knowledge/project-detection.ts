@@ -333,6 +333,7 @@ export function detectProjectType(input: DetectionInput): DetectionResult {
   const recommendedTools: string[] = [];
   if (type === 'aemaacs') {
     recommendedTools.push(
+      'project_summary',
       'ensure_agents_md',
       'aem_skills_index',
       'scaffold_aem_component',
@@ -342,6 +343,7 @@ export function detectProjectType(input: DetectionInput): DetectionResult {
     );
   } else if (type === 'aem65lts') {
     recommendedTools.push(
+      'project_summary',
       'ensure_agents_md',
       'aem65_skills_index',
       'aem65_replication',
@@ -350,6 +352,7 @@ export function detectProjectType(input: DetectionInput): DetectionResult {
     );
   } else if (type === 'storefront') {
     recommendedTools.push(
+      'project_summary',
       'lookup_dropin',
       'add_dropin',
       'scaffold_commerce_block',
@@ -361,6 +364,7 @@ export function detectProjectType(input: DetectionInput): DetectionResult {
     );
   } else if (type === 'eds') {
     recommendedTools.push(
+      'project_summary',
       'lookup_block',
       'scaffold_block',
       'scaffold_model',
@@ -371,7 +375,7 @@ export function detectProjectType(input: DetectionInput): DetectionResult {
       'eds_scripts_guide',
     );
   } else {
-    recommendedTools.push('scaffold_project', 'scaffold_storefront_project');
+    recommendedTools.push('project_summary', 'scaffold_project', 'scaffold_storefront_project');
   }
 
   return {

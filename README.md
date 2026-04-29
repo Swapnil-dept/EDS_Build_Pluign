@@ -157,6 +157,7 @@ If the server is running, Copilot will use the MCP tools automatically.
 | Tool | Description |
 |---|---|
 | `detect_project_type` | Inspect package.json, dir listings, head.html, config.json, fstab.yaml, **plus pom.xml, .aem-skills-config.yaml, and ui.apps/core/dispatcher listings**, and decide whether the workspace is a vanilla EDS project, an EDS Commerce Storefront, or **AEM as a Cloud Service** (Maven/Java). Returns a confidence-scored verdict, installed drop-ins / detected AEM modules, mismatch warnings (e.g. missing `AGENTS.md` or `.aem-skills-config.yaml`), and the recommended next tools. |
+| `project_summary` | Generate or refresh a root summary file such as `.project-summary.md` / `PROJECT_SUMMARY.md`. Captures detected project type, functional scope, global definitions (theme CSS, runtime scripts, auth/encryption/config signals), and the latest session delta so each session starts with current context. |
 
 ### Block & project tools
 
