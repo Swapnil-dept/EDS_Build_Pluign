@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CiplaMed - Your Knowledge Partner</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <h1 class="logo-text">Cipla<span>Med</span></h1>
+        <p class="logo-tagline">Your Knowledge Partner</p>
+      </div>
+      <nav class="nav">
+        <a href="#" class="nav-link">Quick Reads</a>
+        <a href="#" class="nav-link">Events & Videos</a>
+        <a href="#" class="nav-link">Explore</a>
+        <a href="#" class="nav-link">Product Index</a>
+        <a href="#" class="nav-link">Community</a>
+        <a href="#" class="nav-link">eCME</a>
+      </nav>
+      <div class="header-actions">
+        <button class="icon-btn" title="Search"><i class="fas fa-search"></i></button>
+        <button class="icon-btn" title="Reactions"><i class="fas fa-face-smile"></i></button>
+        <button class="icon-btn" title="Bookmarks"><i class="fas fa-bookmark"></i></button>
+        <button class="icon-btn notification-btn" title="Notifications">
+          <i class="fas fa-bell"></i>
+          <span class="notification-badge">1</span>
+        </button>
+        <button class="icon-btn" title="Help"><i class="fas fa-circle-question"></i></button>
+        <button class="icon-btn login-btn" id="loginBtn" title="Login"><i class="fas fa-user-circle"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Welcome Banner (hidden until login) -->
+  <section class="welcome-banner" id="welcomeBanner" style="display:none;">
+    <div class="welcome-inner">
+      <p class="welcome-text">Welcome, <strong id="doctorName">Dr. Rishi Bhargava</strong></p>
+      <div class="specialty-picker">
+        <span class="specialty-label">Get updated on</span>
+        <div class="specialty-select-wrap">
+          <i class="fas fa-brain specialty-icon"></i>
+          <select class="specialty-select" id="specialtySelect">
+            <option>Dermatology</option>
+            <option>Cardiology</option>
+            <option>Neurology</option>
+            <option>Oncology</option>
+            <option>Pulmonology</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Hero Carousel -->
+  <section class="hero-carousel">
+    <div class="carousel-container" id="carousel">
+      <div class="carousel-slide active">
+        <div class="carousel-content">
+          <div class="carousel-text">
+            <div class="carousel-badge">
+              <span class="med-logo">MED</span>
+              <span class="dialogues-tag">DIALOGUES</span>
+            </div>
+            <p class="carousel-subtitle">Episode is Now <span class="live-badge">LIVE</span></p>
+            <h2 class="carousel-title">Stem Cell Talk</h2>
+            <a href="#" class="carousel-cta">Watch Now</a>
+          </div>
+          <div class="carousel-speakers">
+            <div class="speaker">
+              <div class="speaker-img">
+                <img src="https://placehold.co/280x320/1565c0/ffffff?text=Dr.+Gogtay" alt="Dr. Jaideep Gogtay">
+              </div>
+              <p class="speaker-name">Dr. Jaideep Gogtay</p>
+              <p class="speaker-title">MD, Global Chief Medical Officer, Medical Affairs & Pharmacovigilance, Cipla Ltd.</p>
+            </div>
+            <div class="speaker">
+              <div class="speaker-img">
+                <img src="https://placehold.co/280x320/1565c0/ffffff?text=Dr.+Senthil" alt="Dr. Senthilnathan M">
+              </div>
+              <p class="speaker-name">Dr. Senthilnathan M</p>
+              <p class="speaker-title">Head Medical Affairs – India</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="carousel-slide">
+        <div class="carousel-content">
+          <div class="carousel-text">
+            <div class="carousel-badge">
+              <span class="med-logo">MED</span>
+              <span class="dialogues-tag">DIALOGUES</span>
+            </div>
+            <p class="carousel-subtitle">New Episode <span class="live-badge">LIVE</span></p>
+            <h2 class="carousel-title">Oncology Insights</h2>
+            <a href="#" class="carousel-cta">Watch Now</a>
+          </div>
+          <div class="carousel-speakers">
+            <div class="speaker">
+              <div class="speaker-img">
+                <img src="https://placehold.co/280x320/1565c0/ffffff?text=Speaker+1" alt="Speaker">
+              </div>
+              <p class="speaker-name">Dr. Amit Sharma</p>
+              <p class="speaker-title">Head of Oncology, Cipla</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="carousel-arrow carousel-prev" id="carouselPrev"><i class="fas fa-chevron-left"></i></button>
+    <button class="carousel-arrow carousel-next" id="carouselNext"><i class="fas fa-chevron-right"></i></button>
+    <div class="carousel-dots" id="carouselDots"></div>
+  </section>
+
+  <!-- Content Section -->
+  <section class="content-section">
+    <div class="content-inner">
+      <!-- Top Picks -->
+      <div class="top-picks">
+        <h2 class="section-title">Top Picks</h2>
+        <div class="cards-list" id="topPicksList">
+          <!-- Cards injected via JS -->
+        </div>
+      </div>
+      <!-- Featured -->
+      <aside class="featured">
+        <h2 class="section-title">Featured</h2>
+        <div class="featured-list" id="featuredList">
+          <!-- Cards injected via JS -->
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Login Popup -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-popup">
+      <button class="login-close" id="loginClose"><i class="fas fa-xmark"></i></button>
+      <div class="login-header">
+        <h1 class="login-logo">Cipla<span>Med</span></h1>
+        <p>Sign in to your account</p>
+      </div>
+      <form class="login-form" id="loginForm">
+        <div class="login-field">
+          <label for="loginEmail">Email / Username</label>
+          <input type="text" id="loginEmail" placeholder="Enter your email" required autocomplete="username">
+        </div>
+        <div class="login-field">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password">
+        </div>
+        <p class="login-error" id="loginError"></p>
+        <button type="submit" class="login-submit">Sign In</button>
+        <p class="login-hint">Stub credentials: <strong>dr.rishi@cipla.com</strong> / <strong>password123</strong></p>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

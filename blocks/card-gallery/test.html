@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Card Gallery — CEAT Tyres Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+    }
+  </style>
+  <link rel="stylesheet" href="card-gallery.css">
+</head>
+<body>
+
+  <div class="card-gallery">
+    <!-- Row 1: Block config -->
+    <div>
+      <div>CEAT Tyres for Every Terrain</div>
+    </div>
+
+    <!-- Card 1: SportDrive -->
+    <div>
+      <div><img src="https://images.unsplash.com/photo-1502877338535-766e1452684a?w=600&h=600&fit=crop&q=80" alt="SportDrive tyre on city road"></div>
+      <div>SportDrive</div>
+      <div>Crafted for ultra<br>high performance</div>
+      <div>standard</div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+
+    <!-- Card 2: CrossDrive AT -->
+    <div>
+      <div><img src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600&h=600&fit=crop&q=80" alt="CrossDrive tyre on terrain"></div>
+      <div>CrossDrive AT</div>
+      <div>Crafted for<br>all Terrains</div>
+      <div>standard</div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+
+    <!-- Card 3: SecuraDrive -->
+    <div>
+      <div><img src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=600&h=600&fit=crop&q=80" alt="SecuraDrive tyre on urban road"></div>
+      <div>SecuraDrive</div>
+      <div>Crafted for control</div>
+      <div>standard</div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+
+    <!-- Card 4: SecuraDrive SUV -->
+    <div>
+      <div><img src="https://images.unsplash.com/photo-1502877338535-766e1452684a?w=600&h=600&fit=crop&q=80&hue=240" alt="SecuraDrive SUV tyre"></div>
+      <div>SecuraDrive SUV</div>
+      <div>Crafted for control</div>
+      <div>standard</div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+
+    <!-- Card 5: EnergyDrive EV -->
+    <div>
+      <div><img src="https://images.unsplash.com/photo-1593941707882-a5bba14938c7?w=600&h=600&fit=crop&q=80" alt="EnergyDrive EV tyre at charging station"></div>
+      <div>EnergyDrive EV</div>
+      <div>Crafted for<br>electric vehicles</div>
+      <div>standard</div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+
+    <!-- Card 6: Wide warranty banner -->
+    <div>
+      <div><img src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1400&h=400&fit=crop&q=80" alt="Warranty banner background"></div>
+      <div>Long Lasting Warranty &amp; Tyres</div>
+      <div>Register to get 6-month free extended warranty</div>
+      <div>wide</div>
+      <div>Register Now</div>
+      <div>#</div>
+      <div>Know More</div>
+      <div>#</div>
+    </div>
+  </div>
+
+  <script>
+    // Inline decorate for file:// compatibility
+    (function() {
+      const block = document.querySelector('.card-gallery');
+      const rows = [...block.children];
+      if (!rows.length) return;
+
+      const configCells = [...rows[0].children];
+      const sectionTitle = configCells[0]?.textContent.trim() || '';
+
+      const cards = rows.slice(1).map((row) => {
+        const cells = [...row.children];
+        return {
+          image: cells[0]?.querySelector('img'),
+          title: cells[1]?.textContent.trim() || '',
+          subtitle: cells[2]?.innerHTML.trim() || '',
+          variant: (cells[3]?.textContent.trim().toLowerCase() || 'standard'),
+          primaryCtaText: cells[4]?.textContent.trim() || '',
+          primaryCtaLink: cells[5]?.textContent.trim() || '#',
+          secondaryCtaText: cells[6]?.textContent.trim() || '',
+          secondaryCtaLink: cells[7]?.textContent.trim() || '#',
+        };
+      });
+
+      block.textContent = '';
+
+      if (sectionTitle) {
+        const titleEl = document.createElement('h2');
+        titleEl.className = 'card-gallery-title';
+        titleEl.textContent = sectionTitle;
+        block.append(titleEl);
+      }
+
+      const grid = document.createElement('div');
+      grid.className = 'card-gallery-grid';
+
+      cards.forEach((card) => {
+        const cardEl = document.createElement('article');
+        cardEl.className = 'card-gallery-card card-gallery-' + card.variant;
+
+        if (card.image) {
+          const bg = document.createElement('div');
+          bg.className = 'card-gallery-bg';
+          bg.append(card.image);
+          cardEl.append(bg);
+        }
+
+        const content = document.createElement('div');
+        content.className = 'card-gallery-content';
+
+        if (card.title) {
+          const titleEl = document.createElement('h3');
+          titleEl.className = 'card-gallery-card-title';
+          titleEl.textContent = card.title;
+          content.append(titleEl);
+        }
+
+        if (card.subtitle) {
+          const subtitleEl = document.createElement('div');
+          subtitleEl.className = 'card-gallery-card-subtitle';
+          subtitleEl.innerHTML = card.subtitle;
+          content.append(subtitleEl);
+        }
+
+        if (card.primaryCtaText || card.secondaryCtaText) {
+          const ctaWrap = document.createElement('div');
+          ctaWrap.className = 'card-gallery-ctas';
+
+          if (card.primaryCtaText) {
+            const cta = document.createElement('a');
+            cta.className = 'card-gallery-cta card-gallery-cta-primary';
+            cta.href = card.primaryCtaLink;
+            cta.textContent = card.primaryCtaText;
+            ctaWrap.append(cta);
+          }
+
+          if (card.secondaryCtaText) {
+            const cta = document.createElement('a');
+            cta.className = 'card-gallery-cta card-gallery-cta-secondary';
+            cta.href = card.secondaryCtaLink;
+            cta.innerHTML = card.secondaryCtaText + ' <span aria-hidden="true">›</span>';
+            ctaWrap.append(cta);
+          }
+
+          content.append(ctaWrap);
+        }
+
+        cardEl.append(content);
+        grid.append(cardEl);
+      });
+
+      block.append(grid);
+    })();
+  </script>
+</body>
+</html>

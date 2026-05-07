@@ -1,0 +1,166 @@
+/* ===== Project Hero Block ===== */
+/* Theme: Blue #2d73ae / Teal #1d9798 — matching nprpl.com */
+.project-hero {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.project-hero-carousel {
+  position: relative;
+  width: 100%;
+  min-height: 520px;
+}
+
+.project-hero-slide {
+  display: none;
+  position: relative;
+  width: 100%;
+  min-height: 520px;
+  animation: heroFadeIn 0.6s ease;
+}
+
+.project-hero-slide.active {
+  display: block;
+}
+
+@keyframes heroFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.project-hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.project-hero-bg picture,
+.project-hero-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.project-hero-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 520px;
+  padding: 60px 40px;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.project-hero-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 28px;
+  line-height: 1.3;
+  max-width: 800px;
+  text-shadow: 0px 0px 11px #000, 0px 0px 31px #000;
+}
+
+.project-hero-cta {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  background: linear-gradient(90deg, rgba(45,115,174,1) 0%, rgba(29,151,152,1) 89%);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 5px;
+  text-decoration: none;
+  transition: all 0.4s ease;
+  line-height: 1.31;
+}
+
+.project-hero-cta:hover {
+  background: linear-gradient(90deg, rgba(29,151,152,1) 0%, rgba(29,151,152,1) 100%);
+  color: #fff;
+}
+
+/* Arrows */
+.project-hero-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s;
+}
+
+.project-hero-arrow:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.project-hero-prev { left: 20px; }
+.project-hero-next { right: 20px; }
+
+/* Dots — nprpl.com uses #D6D6D6 inactive, #869791 active */
+.project-hero-dots {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+}
+
+.project-hero-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #D6D6D6;
+  cursor: pointer;
+  transition: background 0.3s;
+  border: none;
+}
+
+.project-hero-dot.active {
+  background: #869791;
+}
+
+/* Responsive */
+@media (max-width: 991px) {
+  .project-hero-carousel,
+  .project-hero-slide,
+  .project-hero-overlay {
+    min-height: 400px;
+  }
+}
+
+@media (max-width: 767px) {
+  .project-hero-carousel,
+  .project-hero-slide,
+  .project-hero-overlay {
+    min-height: 300px;
+  }
+
+  .project-hero-title {
+    font-size: 1.5rem;
+    font-weight: 500;
+  }
+
+  .project-hero-arrow {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+}

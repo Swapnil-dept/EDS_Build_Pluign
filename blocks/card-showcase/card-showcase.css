@@ -1,0 +1,230 @@
+/* card-showcase block — dark-themed tabbed card display */
+main .card-showcase {
+  --showcase-bg: #1a1a1a;
+  --showcase-card-bg: #222;
+  --showcase-text: #fff;
+  --showcase-text-muted: #ccc;
+  --showcase-tag-bg: rgba(255, 255, 255, 0.12);
+  --showcase-tag-text: #e0e0e0;
+  --showcase-cta-border: #fff;
+  --showcase-tab-bg: transparent;
+  --showcase-tab-active-bg: #fff;
+  --showcase-tab-active-text: #000;
+  --showcase-tab-text: #ccc;
+  --showcase-radius: 24px;
+
+  background: var(--showcase-bg);
+  border-radius: var(--showcase-radius);
+  padding: 48px 40px 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Cards container */
+main .card-showcase .card-showcase-cards {
+  position: relative;
+}
+
+/* Individual card item */
+main .card-showcase .card-showcase-item {
+  display: none;
+  gap: 40px;
+  align-items: center;
+}
+
+main .card-showcase .card-showcase-item.active {
+  display: flex;
+}
+
+/* Card image */
+main .card-showcase .card-showcase-image {
+  flex: 0 0 45%;
+  max-width: 420px;
+}
+
+main .card-showcase .card-showcase-image picture img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 16px;
+}
+
+/* Content area */
+main .card-showcase .card-showcase-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Tags */
+main .card-showcase .card-showcase-tags {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+main .card-showcase .card-showcase-tag {
+  background: var(--showcase-tag-bg);
+  color: var(--showcase-tag-text);
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+/* Title */
+main .card-showcase .card-showcase-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--showcase-text);
+  margin: 0 0 20px;
+  line-height: 1.1;
+}
+
+/* Benefits list */
+main .card-showcase .card-showcase-benefits {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px;
+}
+
+main .card-showcase .card-showcase-benefits li {
+  color: var(--showcase-text-muted);
+  font-size: 1rem;
+  line-height: 1.6;
+  padding: 4px 0;
+}
+
+/* CTA buttons */
+main .card-showcase .card-showcase-ctas {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+main .card-showcase .card-showcase-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 32px;
+  border-radius: 24px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+  min-width: 140px;
+}
+
+main .card-showcase .card-showcase-cta-primary {
+  background: var(--showcase-text);
+  color: #000;
+  border: 1px solid var(--showcase-cta-border);
+}
+
+main .card-showcase .card-showcase-cta-primary:hover {
+  background: #e0e0e0;
+}
+
+main .card-showcase .card-showcase-cta-secondary {
+  background: transparent;
+  color: var(--showcase-text);
+  border: 1px solid var(--showcase-cta-border);
+}
+
+main .card-showcase .card-showcase-cta-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Tab navigation */
+main .card-showcase .card-showcase-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex-wrap: wrap;
+}
+
+main .card-showcase .card-showcase-tab {
+  background: var(--showcase-tab-bg);
+  color: var(--showcase-tab-text);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+
+main .card-showcase .card-showcase-tab:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+main .card-showcase .card-showcase-tab.active {
+  background: var(--showcase-tab-active-bg);
+  color: var(--showcase-tab-active-text);
+  border-color: var(--showcase-tab-active-bg);
+}
+
+/* Responsive: tablet */
+@media (max-width: 900px) {
+  main .card-showcase {
+    padding: 32px 24px 24px;
+  }
+
+  main .card-showcase .card-showcase-item.active {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  main .card-showcase .card-showcase-image {
+    flex: none;
+    max-width: 300px;
+    margin: 0 auto;
+  }
+
+  main .card-showcase .card-showcase-tags {
+    justify-content: center;
+  }
+
+  main .card-showcase .card-showcase-ctas {
+    justify-content: center;
+  }
+
+  main .card-showcase .card-showcase-title {
+    font-size: 2rem;
+  }
+}
+
+/* Responsive: mobile */
+@media (max-width: 600px) {
+  main .card-showcase {
+    padding: 24px 16px 20px;
+    border-radius: 16px;
+  }
+
+  main .card-showcase .card-showcase-image {
+    max-width: 240px;
+  }
+
+  main .card-showcase .card-showcase-title {
+    font-size: 1.6rem;
+  }
+
+  main .card-showcase .card-showcase-tabs {
+    gap: 8px;
+  }
+
+  main .card-showcase .card-showcase-tab {
+    padding: 6px 14px;
+    font-size: 0.8rem;
+  }
+
+  main .card-showcase .card-showcase-cta {
+    padding: 10px 24px;
+    font-size: 0.85rem;
+    min-width: 120px;
+  }
+}

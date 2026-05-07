@@ -1,0 +1,221 @@
+/* ===== Card Gallery Block ===== */
+.card-gallery {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 60px 24px;
+}
+
+/* Title with orange underline accent */
+.card-gallery-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 40px;
+  position: relative;
+  padding-bottom: 8px;
+  display: inline-block;
+}
+
+.card-gallery-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 80px;
+  height: 4px;
+  background: #ff6b1a;
+  border-radius: 2px;
+}
+
+/* Grid layout */
+.card-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+/* Standard card */
+.card-gallery-card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  background: #1a1a2e;
+  cursor: pointer;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.card-gallery-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+}
+
+.card-gallery-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.card-gallery-bg picture,
+.card-gallery-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-gallery-content {
+  position: relative;
+  z-index: 2;
+  padding: 24px 24px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-gallery-card-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+  line-height: 1.2;
+}
+
+.card-gallery-card-subtitle {
+  font-size: 0.92rem;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+/* Wide variant — spans 3 columns, used for warranty banners */
+.card-gallery-wide {
+  grid-column: span 3;
+  aspect-ratio: auto;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 280px;
+}
+
+.card-gallery-wide .card-gallery-bg {
+  z-index: 0;
+}
+
+.card-gallery-wide .card-gallery-bg img {
+  object-fit: cover;
+  object-position: right center;
+}
+
+.card-gallery-wide .card-gallery-content {
+  background: linear-gradient(90deg, #fff 0%, #fff 50%, rgba(255, 255, 255, 0) 100%);
+  width: 100%;
+  padding: 40px 48px;
+  justify-content: center;
+}
+
+.card-gallery-wide .card-gallery-card-title {
+  color: #1a1a1a;
+  font-size: 1.75rem;
+  margin-bottom: 8px;
+}
+
+.card-gallery-wide .card-gallery-card-subtitle {
+  color: #555;
+  font-size: 1rem;
+  margin-bottom: 20px;
+}
+
+/* CTAs */
+.card-gallery-ctas {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: auto;
+}
+
+.card-gallery-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 28px;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.card-gallery-cta-primary {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.card-gallery-cta-primary:hover {
+  background: #ff6b1a;
+  transform: translateY(-1px);
+}
+
+.card-gallery-cta-secondary {
+  background: transparent;
+  color: #1a1a1a;
+  border: 2px solid #1a1a1a;
+}
+
+.card-gallery-cta-secondary:hover {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .card-gallery-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .card-gallery-wide {
+    grid-column: span 3;
+  }
+}
+
+@media (max-width: 768px) {
+  .card-gallery {
+    padding: 40px 16px;
+  }
+  .card-gallery-title {
+    font-size: 1.6rem;
+  }
+  .card-gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .card-gallery-wide {
+    grid-column: span 2;
+  }
+  .card-gallery-wide .card-gallery-content {
+    padding: 28px 24px;
+  }
+  .card-gallery-card-title {
+    font-size: 1.15rem;
+  }
+  .card-gallery-card-subtitle {
+    font-size: 0.82rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-gallery-grid {
+    grid-template-columns: 1fr;
+  }
+  .card-gallery-wide {
+    grid-column: span 1;
+  }
+  .card-gallery-card {
+    aspect-ratio: 4 / 3;
+  }
+  .card-gallery-ctas {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

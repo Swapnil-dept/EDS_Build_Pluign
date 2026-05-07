@@ -30,6 +30,7 @@ import { registerSearchBlockCollection } from './tools/search-block-collection.j
 import { registerEdsScripts } from './tools/eds-scripts.js';
 import { registerGenerateBlockFromDesign } from './tools/generate-block-from-design.js';
 import { registerProjectSummary } from './tools/project-summary.js';
+import { registerCrawlUrl } from './tools/crawl-url.js';
 // Tools — Project routing (smart detection)
 import { registerDetectProjectType } from './tools/detect-project-type.js';
 // Tools — Storefront (Adobe Commerce drop-ins)
@@ -53,6 +54,7 @@ import { registerAemDispatcherConfig } from './tools/aem-dispatcher-config.js';
 import { registerAem65SkillsIndex } from './tools/aem65-skills-index.js';
 import { registerAem65Replication } from './tools/aem65-replication.js';
 import { registerAem65Workflow } from './tools/aem65-workflow.js';
+import { registerScaffoldAem65Component } from './tools/scaffold-aem65-component.js';
 // Resources
 import { registerResources } from './resources/eds-resources.js';
 // Prompts
@@ -73,6 +75,7 @@ registerSearchBlockCollection(server); // search_block_collection — search Ado
 registerPerformanceCheck(server); // check_performance — analyze block performance
 registerGenerateBlockFromDesign(server); // generate_block_from_design — text / image / Figma → block (Adobe CDD)
 registerProjectSummary(server); // project_summary — create/update workspace summary and session handoff
+registerCrawlUrl(server); // crawl_url — fetch a URL and extract design + structural signals
 // Tools: Project & Configuration
 registerScaffoldProject(server); // scaffold_project — new project setup guide
 registerEdsConfig(server); // eds_config — configuration file templates
@@ -100,6 +103,7 @@ registerAemDispatcherConfig(server); // aem_dispatcher_config (cloud + ams varia
 registerAem65SkillsIndex(server); // aem65_skills_index
 registerAem65Replication(server); // aem65_replication
 registerAem65Workflow(server); // aem65_workflow
+registerScaffoldAem65Component(server); // scaffold_aem65_component
 // Resources: Documentation (available as context to the LLM)
 registerResources(server);
 // Prompts: Task Templates (appear as slash commands in IDEs)
@@ -121,7 +125,7 @@ async function main() {
     console.error('🚀 EDS MCP Server v1.0.0 running on stdio');
     console.error('   Tools: scaffold_block, scaffold_model, validate_block, explain_dom,');
     console.error('          lookup_block, search_block_collection, check_performance,');
-    console.error('          generate_block_from_design, project_summary,');
+    console.error('          generate_block_from_design, project_summary, crawl_url,');
     console.error('          scaffold_project, eds_config, eds_scripts_guide');
     console.error('   Routing: detect_project_type (call first to decide EDS vs storefront)');
     console.error('   Storefront tools: scaffold_storefront_project, add_dropin, lookup_dropin,');
@@ -130,13 +134,16 @@ async function main() {
     console.error('   AEMaaCS tools: aem_skills_index, ensure_agents_md, scaffold_aem_component,');
     console.error('                  aem_best_practices, aem_migration_pattern, aem_dispatcher_config');
     console.error('   AEM 6.5 LTS / AMS tools: aem65_skills_index, aem65_replication, aem65_workflow,');
-    console.error('                            aem_dispatcher_config (variant=ams), ensure_agents_md (variant=6.5-lts)');
+    console.error('                            scaffold_aem65_component, aem_dispatcher_config (variant=ams),');
+    console.error('                            ensure_agents_md (variant=6.5-lts)');
     console.error('   Resources: eds-coding-standards, eds-block-guide, eds-cheatsheet, eds-adobe-skills,');
     console.error('              eds-storefront-architecture, eds-storefront-dropins, eds-storefront-sdk,');
     console.error('              aemaacs-skills, aemaacs-architecture');
     console.error('   Prompts: new-block, fix-block, design-to-block,');
     console.error('            new-storefront-project, add-and-customize-dropin, storefront-from-design,');
-    console.error('            new-aem-component, migrate-to-cloud-service, aem-dispatcher-task');
+    console.error('            new-aem-component, migrate-to-cloud-service, aem-dispatcher-task,');
+    console.error('            new-aem65-component, aem65-replication-task, aem65-workflow-task,');
+    console.error('            figma-to-component, image-to-component, url-to-component');
     console.error('   CLI: eds-validate (block validator/linter)');
 }
 main().catch((error) => {

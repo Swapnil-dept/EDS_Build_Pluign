@@ -294,5 +294,219 @@ export function registerPrompts(server) {
                 },
             }],
     }));
+    // ─── New AEM Component (6.5 LTS / AMS) ───────────────────
+    server.prompt('new-aem65-component', 'Step-by-step guide for scaffolding an AEM 6.5 LTS / AMS component (Java / HTL / Granite UI dialog). Use on on-prem or Adobe Managed Services projects — NOT AEMaaCS.', {
+        componentName: z.string().describe('kebab-case component name (e.g. "promo-card")'),
+        description: z.string().describe('What the component does and the dialog fields the user wants'),
+        extendsCore: z.string().optional().describe('Optional Core Component to extend (teaser, list, navigation, etc.) — requires Core Components 2.x+ on 6.5 LTS'),
+    }, ({ componentName, description, extendsCore }) => ({
+        messages: [{
+                role: 'user',
+                content: {
+                    type: 'text',
+                    text: `Create an AEM 6.5 LTS / AMS component named "${componentName}" that ${description}.${extendsCore ? `\nExtend the Core Component "${extendsCore}" (verify Core Components 2.x+ is installed in \`all/pom.xml\` first).` : ''}\n\n` +
+                        `**Step 0 (always first):** call \`detect_project_type\` with snapshots of the workspace. Pass \`pomXml\` and listings of \`ui.apps/\`, \`core/\`, \`dispatcher/\`. The pom must reference \`com.adobe.aem:uber-jar\` or \`cq.quickstart.version\` (not \`aem-sdk-api\`). If it does NOT return \`aem65lts\`, STOP — use \`new-aem-component\` (Cloud Service) or \`new-block\` (EDS) instead.\n\n` +
+                        `**Project summary rule:** ${PROJECT_SUMMARY_WORKFLOW}\n\n` +
+                        `**Step 1:** if no \`AGENTS.md\` exists at the workspace root, call \`ensure_agents_md\` with \`variant: "6.5-lts"\`. Write the AGENTS.md and CLAUDE.md it returns. (6.5 LTS does NOT use \`.aem-skills-config.yaml\` — that is a Cloud-Service-only convention.)\n\n` +
+                        `**Step 2:** read project metadata directly from the source of truth:\n` +
+                        `- \`project\` (artifact name) ← root \`pom.xml\` \`<artifactId>\`\n` +
+                        `- \`javaPackage\` ← \`core/pom.xml\` \`<package>\` or existing \`core/src/main/java/...\` path\n` +
+                        `- \`group\` ← match the convention used by other components in \`ui.apps/src/main/content/jcr_root/apps/<project>/components/\` (look at any existing \`.content.xml\` for \`componentGroup="..."\`)\n\n` +
+                        `**Step 3:** ask the user to **confirm the dialog field list** verbatim before scaffolding. No extras, no renames.\n\n` +
+                        `**Step 4:** call \`scaffold_aem65_component\` with the confirmed fields, \`componentName\`, \`title\`, \`project\`, \`javaPackage\`, \`group\`${extendsCore ? `, \`extendsCore: "${extendsCore}"\`` : ''}. Write the files it returns to the exact paths shown.\n\n` +
+                        `**Step 5:** 6.5-specific guardrails — DO NOT call the Cloud-Service-only tools \`aem_best_practices\` or \`aem_migration_pattern\` (those reference modules describe AEMaaCS rules that don't all apply on 6.5). Instead, for advanced patterns:\n` +
+                        `- Replication / publish flow → call \`aem65_replication\`.\n` +
+                        `- Workflow models / processes → call \`aem65_workflow\`.\n` +
+                        `- Dispatcher edits → call \`aem_dispatcher_config\` with \`variant: "ams"\`.\n` +
+                        `- Skill index → \`aem65_skills_index\`.\n\n` +
+                        `**Step 6:** build with \`mvn -PautoInstallPackage clean install -pl core,ui.apps\`. Deploy via Package Manager or the Content Package Maven Plugin — NEVER reference Cloud Manager pipelines on 6.5.\n\n` +
+                        `**Step 7:** verify in author UI — drop the component on a test page and confirm the dialog shows exactly the confirmed fields.\n\n` +
+                        `Hard rules (6.5 LTS / AMS):\n` +
+                        `- Use OSGi DS R6 annotations for new code (\`org.osgi.service.component.annotations\`). Felix SCR is still supported but legacy — don't introduce it in greenfield code.\n` +
+                        `- Never write to \`/libs\`. Use \`/apps\` overlays or \`/conf/global/\`.\n` +
+                        `- Use \`ResourceResolverFactory.getServiceResourceResolver()\` with a sub-service mapping. Avoid \`loginAdministrative()\`.\n` +
+                        `- Doc links go to \`experienceleague.adobe.com/en/docs/experience-manager-65/...\` — never Cloud Service URLs.\n` +
+                        `- Granite UI dialogs use **Coral 3** (\`cq/gui/components/authoring/dialog/richtext\`, \`granite/ui/components/coral/foundation/...\`) — Coral 2 \`htmlField\` is deprecated.`,
+                },
+            }],
+    }));
+    // ─── AEM 6.5 LTS / AMS Replication task ──────────────────
+    server.prompt('aem65-replication-task', 'Route an AEM 6.5 LTS / AMS Replication request (agent config, content activation, Replicator API, troubleshooting) to the right specialist.', {
+        intent: z.string().describe('configure-replication-agent | replicate-content | replication-api | troubleshoot-replication | replication-orchestrator'),
+        question: z.string().describe('The user question or task in their own words'),
+    }, ({ intent, question }) => ({
+        messages: [{
+                role: 'user',
+                content: {
+                    type: 'text',
+                    text: `Help with this AEM 6.5 LTS / AMS Replication task: ${question}\n\n` +
+                        `**Step 0:** confirm the workspace is \`aem65lts\` via \`detect_project_type\` (pass \`pomXml\`). If the pom uses \`aem-sdk-api\`, STOP — Cloud Service uses Sling Distribution, not legacy replication agents. Use \`aem-dispatcher-task\` or the Cloud migration prompt instead.\n\n` +
+                        `**Project summary rule:** ${PROJECT_SUMMARY_WORKFLOW}\n\n` +
+                        `**Step 1:** call \`aem65_replication\` with \`intent: "${intent}"\` and the user question. Follow the specialist guidance it returns.\n\n` +
+                        `**Step 2:** legacy Replicator API only — \`com.day.cq.replication.Replicator\`, \`ReplicationOptions\`, \`ReplicationStatus\`, \`AgentManager\`, \`ReplicationQueue\`, \`ReplicationListener\`. Do NOT use \`org.apache.sling.distribution.*\` (that is Cloud Service only).\n\n` +
+                        `**Step 3:** for agent config, edit JCR nodes under \`/etc/replication/agents.author/\` or \`/etc/replication/agents.publish/\`. Always test in author/publish before promoting.`,
+                },
+            }],
+    }));
+    // ─── AEM 6.5 LTS / AMS Workflow task ─────────────────────
+    server.prompt('aem65-workflow-task', 'Route an AEM 6.5 LTS / AMS Granite Workflow request (model design, custom step, launcher, JMX triage, debugging) to the right specialist.', {
+        intent: z.string().describe('workflow-model-design | workflow-development | workflow-triggering | workflow-launchers | workflow-debugging | workflow-triaging | workflow-orchestrator'),
+        question: z.string().describe('The user question or task in their own words'),
+    }, ({ intent, question }) => ({
+        messages: [{
+                role: 'user',
+                content: {
+                    type: 'text',
+                    text: `Help with this AEM 6.5 LTS / AMS Workflow task: ${question}\n\n` +
+                        `**Step 0:** confirm the workspace is \`aem65lts\` via \`detect_project_type\`. If \`aemaacs\`, JMX-based remediation is forbidden — use the Cloud Service workflow skills instead.\n\n` +
+                        `**Project summary rule:** ${PROJECT_SUMMARY_WORKFLOW}\n\n` +
+                        `**Step 1:** call \`aem65_workflow\` with \`intent: "${intent}"\` and the user question. Follow the specialist guidance it returns.\n\n` +
+                        `**Step 2:** path conventions on 6.5 LTS:\n` +
+                        `- Workflow model **design-time**: \`/conf/global/settings/workflow/models/<id>\` (preferred) or \`/etc/workflow/models/<id>\` (legacy — still allowed on 6.5).\n` +
+                        `- Workflow model **runtime** (API): \`/var/workflow/models/<id>\`.\n` +
+                        `- Launcher config: \`/conf/global/settings/workflow/launcher/config/\`.\n\n` +
+                        `**Step 3:** JMX is **allowed** on 6.5 LTS / AMS — \`retryFailedWorkItems\`, \`countStaleWorkflows\`, \`restartStaleWorkflows\`, \`purgeCompleted\` are valid remediation tools (they are forbidden on Cloud Service).\n\n` +
+                        `**Step 4:** for custom steps, implement \`com.adobe.granite.workflow.exec.WorkflowProcess\` and register via OSGi DS R6 (Felix SCR still supported but discouraged for new code).`,
+                },
+            }],
+    }));
+    // ─── Input adapters: design → block (auto-route by project type) ───
+    //
+    // These three prompts are *input adapters*. They each turn a design source
+    // (Figma URL, image, web URL) into a normalized spec, then hand off to the
+    // platform-specific scaffold prompt based on `detect_project_type`:
+    //   eds        → new-block / design-to-block
+    //   storefront → storefront-from-design
+    //   aemaacs    → new-aem-component
+    //   aem65lts   → new-aem65-component
+    const ROUTE_BY_PROJECT_TYPE = `Routing rule (apply after extracting the spec):\n` +
+        `- \`detect_project_type\` returns \`eds\`        → use \`new-block\` or \`design-to-block\` to scaffold.\n` +
+        `- \`detect_project_type\` returns \`storefront\` → use \`storefront-from-design\` (commerce pages compose drop-ins, NOT vanilla blocks).\n` +
+        `- \`detect_project_type\` returns \`aemaacs\`    → use \`new-aem-component\` (AEM as a Cloud Service).\n` +
+        `- \`detect_project_type\` returns \`aem65lts\`  → use \`new-aem65-component\` (AEM 6.5 LTS / AMS / on-prem).`;
+    // ─── Figma → component ───────────────────────────────────
+    server.prompt('figma-to-component', 'Read a Figma frame / file and turn it into a block or AEM component, auto-routed to the right platform (EDS / Storefront / AEMaaCS / AEM 6.5 LTS).', {
+        figmaUrl: z.string().describe('Figma file or frame URL (e.g. https://www.figma.com/file/<key>/...?node-id=123%3A456)'),
+        componentName: z.string().describe('kebab-case name for the resulting block/component (e.g. "promo-card")'),
+        description: z.string().optional().describe('Optional extra context the LLM should consider'),
+    }, ({ figmaUrl, componentName, description }) => ({
+        messages: [{
+                role: 'user',
+                content: {
+                    type: 'text',
+                    text: `Build "${componentName}" from this Figma source: ${figmaUrl}.${description ? `\nContext: ${description}` : ''}\n\n` +
+                        `**Step 0 — detect available Figma reader.** Check the active MCP tool inventory for any tool whose name starts with \`mcp__figma__\` / \`figma_\` / contains "figma" (e.g. \`get_figma_data\`, \`get_file\`, \`get_node\`).\n\n` +
+                        `- **If a Figma MCP tool is available:** call it with the file key and node id parsed from the URL. Extract: layers, components / variants, auto-layout direction, fills (colors), strokes, typography (family / weight / size / line-height), spacing tokens, image fills, and any text content. Save the structured spec.\n\n` +
+                        `- **If NO Figma MCP tool is available:** STOP and return this exact instruction to the user:\n\n` +
+                        `  > To get accurate Figma extraction, please install **Microsoft's official Figma MCP server**:\n` +
+                        `  > \n` +
+                        `  > \`\`\`json\n` +
+                        `  > // .vscode/mcp.json or .cursor/mcp.json\n` +
+                        `  > {\n` +
+                        `  >   "servers": {\n` +
+                        `  >     "figma": {\n` +
+                        `  >       "command": "npx",\n` +
+                        `  >       "args": ["-y", "figma-developer-mcp", "--stdio"],\n` +
+                        `  >       "env": { "FIGMA_API_KEY": "<your-figma-personal-access-token>" }\n` +
+                        `  >     }\n` +
+                        `  >   }\n` +
+                        `  > }\n` +
+                        `  > \`\`\`\n` +
+                        `  > \n` +
+                        `  > Get a token from https://www.figma.com/settings → Personal access tokens. Restart your IDE, then re-run \`figma-to-component\`.\n` +
+                        `  > \n` +
+                        `  > **Fallback (without Figma MCP):** export the frame as a PNG/JPG and re-run \`image-to-component\` with the file path.\n\n` +
+                        `**Step 1 — Project summary rule:** ${PROJECT_SUMMARY_WORKFLOW}\n\n` +
+                        `**Step 2 — detect project type:** call \`detect_project_type\` with workspace snapshots so you know which platform to target.\n\n` +
+                        `**Step 3 — normalize the Figma spec into a block-friendly schema:**\n` +
+                        `- \`structure\`: leaf vs container (any frame with ≥2 sibling instances of the same component is a container with item children).\n` +
+                        `- \`fields\`: per item — image+imageAlt, title+titleType, eyebrow, body (richtext), link+linkText (CTAs), classes (variants).\n` +
+                        `- \`variants\`: any Figma component variant property maps to an option on the \`classes\` multiselect.\n` +
+                        `- \`tokens\`: colors → CSS custom properties, typography → \`font-family / font-size / line-height\`, spacing → margins / gaps.\n` +
+                        `- \`responsive\`: if multiple breakpoint frames exist, capture each at 600 / 900 / 1200 px (mobile-first).\n\n` +
+                        `**Step 4 — hand off:**\n${ROUTE_BY_PROJECT_TYPE}\n\nPass \`blockName: "${componentName}"\` (or \`componentName\` for AEM) and the normalized spec from Step 3 as the design description.\n\n` +
+                        `Hard rules across all platforms:\n` +
+                        `- Reuse platform image / link nodes (don't recreate \`<picture>\` / \`<a>\`).\n` +
+                        `- Mobile-first CSS, breakpoints 600 / 900 / 1200 px.\n` +
+                        `- No new npm dependencies in EDS / Storefront blocks.`,
+                },
+            }],
+    }));
+    // ─── Image → component (vision) ──────────────────────────
+    server.prompt('image-to-component', 'Analyze a design screenshot / mockup with vision and turn it into a block or AEM component, auto-routed to the right platform.', {
+        componentName: z.string().describe('kebab-case name for the resulting block/component'),
+        imagePaths: z.string().describe('Comma-separated local file paths or URLs of the design image(s)'),
+        description: z.string().optional().describe('Optional extra context (e.g. "match the brand from styles/styles.css")'),
+    }, ({ componentName, imagePaths, description }) => ({
+        messages: [{
+                role: 'user',
+                content: {
+                    type: 'text',
+                    text: `Build "${componentName}" from these design image(s): ${imagePaths}.${description ? `\nContext: ${description}` : ''}\n\n` +
+                        `**Step 0 — confirm the IDE LLM can see images.** You (the assistant) MUST attach / view the listed image(s) using your native vision capability before proceeding. If the image path is local, read it as an image. If it is a URL, fetch and view it. Do NOT guess from the filename.\n\n` +
+                        `**Step 1 — Project summary rule:** ${PROJECT_SUMMARY_WORKFLOW}\n\n` +
+                        `**Step 2 — detect project type:** call \`detect_project_type\` with workspace snapshots.\n\n` +
+                        `**Step 3 — vision extraction.** For each image, produce a structured spec:\n` +
+                        `- **Layout**: grid columns at desktop, stacking at mobile, alignment, gaps.\n` +
+                        `- **Components & repetitions**: any element repeated ≥2 times is an item child of a container block.\n` +
+                        `- **Fields**: list every distinct authorable element (heading, eyebrow, body, image, CTA primary, CTA secondary, badge, price, etc.) with field name in camelCase.\n` +
+                        `- **Variants**: dark / light, wide / compact, with-image / text-only — anything that toggles → entry on the \`classes\` multiselect.\n` +
+                        `- **Design tokens**: foreground / background colors (hex), accent / brand colors, font families (primary + secondary), font sizes for h1/h2/h3/body, border radius, button shape (sharp / soft / pill).\n` +
+                        `- **Interactive behavior**: hover states, transitions, accordion / carousel mechanics, autoplay timing.\n` +
+                        `- **Responsive**: behavior at 600 / 900 / 1200 px breakpoints.\n` +
+                        `- **Acceptance criteria**: 5–8 bullets a reviewer can check against the image.\n\n` +
+                        `**Step 4 — sanity check.** For pre-LCP / above-the-fold blocks, verify nothing in the spec violates:\n` +
+                        `- 100 KB pre-LCP budget (no carousels with 20+ slides eager-loaded).\n` +
+                        `- Authoring shape that EDS / UE / Granite can actually express (no hard-coded counts; use container blocks for repeating items).\n\n` +
+                        `**Step 5 — hand off:**\n${ROUTE_BY_PROJECT_TYPE}\n\nPass \`blockName: "${componentName}"\` (or \`componentName\` for AEM) plus the spec from Step 3 as \`description\`.\n\n` +
+                        `**Step 6 — call \`generate_block_from_design\`** if the target is EDS / Storefront — it returns the canonical scaffold + the same vision-analysis prompt structure for cross-checking. Skip this step for AEMaaCS / AEM 6.5.`,
+                },
+            }],
+    }));
+    // ─── URL → component (crawler + Playwright handoff) ──────
+    server.prompt('url-to-component', 'Crawl a public URL, identify components / variations / theme, and build a matching block or AEM component, auto-routed to the right platform.', {
+        url: z.string().describe('Public URL to crawl (e.g. https://www.example.com/page)'),
+        componentName: z.string().describe('kebab-case name for the block/component to generate (e.g. "feature-cards")'),
+        target: z.string().optional().describe('Optional CSS selector or section description to focus on (e.g. ".hero", "the testimonials carousel")'),
+    }, ({ url, componentName, target }) => ({
+        messages: [{
+                role: 'user',
+                content: {
+                    type: 'text',
+                    text: `Build "${componentName}" by reverse-engineering this page: ${url}.${target ? `\nFocus area: ${target}` : ''}\n\n` +
+                        `**Step 0 — Project summary rule:** ${PROJECT_SUMMARY_WORKFLOW}\n\n` +
+                        `**Step 1 — static crawl.** Call \`crawl_url\` with \`url: "${url}"\`. Read its output: page meta, palette, fonts, headings, component candidates (hero / cards / carousel / tabs / accordion / form / cta), repeating CSS classes, and counts.\n\n` +
+                        `**Step 2 — decide if you need rendered HTML.**\n` +
+                        `- If the static crawl shows few headings / no inline styles / a "Frameworks: React (SSR) / Next.js / Nuxt" hint AND the user's focus area is dynamic, you need the rendered DOM.\n` +
+                        `- Check for **Microsoft Playwright MCP** in the tool inventory (any tool starting with \`browser_\` / \`playwright_\` — typically \`browser_navigate\`, \`browser_snapshot\`, \`browser_evaluate\`).\n` +
+                        `- **If Playwright MCP is available:** call \`browser_navigate\` with the URL, wait for network idle, then \`browser_evaluate\` with \`() => document.documentElement.outerHTML\` (or \`browser_snapshot\` for an accessibility tree). Pipe the rendered HTML back into \`crawl_url\` via the \`html\` parameter for a second-pass analysis.\n` +
+                        `- **If Playwright MCP is NOT available** and you decided you need it, STOP and tell the user:\n\n` +
+                        `  > For accurate analysis of JS-rendered / SPA pages, install **Microsoft's official Playwright MCP server**:\n` +
+                        `  > \n` +
+                        `  > \`\`\`json\n` +
+                        `  > // .vscode/mcp.json or .cursor/mcp.json\n` +
+                        `  > {\n` +
+                        `  >   "servers": {\n` +
+                        `  >     "playwright": { "command": "npx", "args": ["-y", "@playwright/mcp@latest"] }\n` +
+                        `  >   }\n` +
+                        `  > }\n` +
+                        `  > \`\`\`\n` +
+                        `  > \n` +
+                        `  > Restart your IDE, then re-run \`url-to-component\`.\n\n` +
+                        `  Otherwise (static-only is fine), continue with the crawl_url result.\n\n` +
+                        `**Step 3 — identify the component.** From the candidates + repeating classes, decide which page section maps to "${componentName}":\n` +
+                        `- \`focus area\` ${target ? `is "${target}"` : 'was not provided — pick the strongest candidate (hero if it dominates the fold, cards if a class repeats ≥3 times, carousel if multiple sliders share a class, etc.)'}.\n` +
+                        `- Detect variations: if the same class appears with modifier suffixes (\`.card\`, \`.card--dark\`, \`.card--wide\`), each modifier becomes a \`classes\` multiselect option.\n` +
+                        `- Repeating siblings (\`<div class="card">\` × N) → container block with item children. N ≥ 3 → strong signal.\n\n` +
+                        `**Step 4 — extract design tokens** from the crawl output: top palette entries → CSS custom properties; top font families → \`--type-base-font-family\` / \`--type-headline-font-family\`; visible button radius / spacing → CSS variables.\n\n` +
+                        `**Step 5 — detect project type:** call \`detect_project_type\` with workspace snapshots.\n\n` +
+                        `**Step 6 — hand off:**\n${ROUTE_BY_PROJECT_TYPE}\n\nPass \`blockName: "${componentName}"\` (or \`componentName\`) plus a description that includes:\n- the component candidate type (e.g. "cards container with 6 items + dark variant")\n- the field list inferred from the DOM (image / title / body / cta — match what the source page actually authors)\n- the design tokens (palette + fonts) to apply in the block CSS\n- the source URL for traceability.\n\n` +
+                        `**Step 7 — final review.** After the scaffold prompt finishes, run \`validate_block\` (EDS / Storefront) or \`mvn -PautoInstallPackage clean install -pl core,ui.apps\` (AEM 6.5) / \`mvn -PautoInstallSinglePackage ...\` (AEMaaCS) to confirm the build passes.\n\n` +
+                        `Constraints:\n` +
+                        `- Reverse-engineer **structure and theme**, not copyrighted content. Replace any extracted text/imagery with placeholders unless the user explicitly owns the source page.\n` +
+                        `- Don't introduce frameworks (Bootstrap, Tailwind) the source uses if the target project is EDS — re-implement with vanilla CSS scoped to \`main .${componentName}\`.`,
+                },
+            }],
+    }));
 }
 //# sourceMappingURL=eds-prompts.js.map

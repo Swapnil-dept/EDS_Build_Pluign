@@ -1,0 +1,76 @@
+{
+  "definitions": [
+    {
+      "title": "Project Details",
+      "id": "project-details",
+      "plugins": {
+        "xwalk": {
+          "page": {
+            "resourceType": "core/franklin/components/block/v1/block",
+            "template": {
+              "name": "Project Details",
+              "model": "project-details",
+              "filter": "project-details"
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "Detail Item",
+      "id": "detail-item",
+      "plugins": {
+        "xwalk": {
+          "page": {
+            "resourceType": "core/franklin/components/block/v1/block/item",
+            "template": {
+              "name": "Detail Item",
+              "model": "detail-item"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "models": [
+    {
+      "id": "project-details",
+      "fields": [
+        {
+          "component": "text",
+          "valueType": "string",
+          "name": "sectionTitle",
+          "label": "Section Title",
+          "description": "Heading displayed above the details grid"
+        }
+      ]
+    },
+    {
+      "id": "detail-item",
+      "fields": [
+        {
+          "component": "text",
+          "valueType": "string",
+          "name": "label",
+          "label": "Label",
+          "required": true,
+          "description": "E.g. Project Name, Client, Construction Period"
+        },
+        {
+          "component": "richtext",
+          "valueType": "string",
+          "name": "value",
+          "label": "Value",
+          "required": true,
+          "description": "Content for this detail field"
+        }
+      ]
+    }
+  ],
+  "filters": [
+    {
+      "id": "project-details",
+      "components": ["detail-item"]
+    }
+  ]
+}

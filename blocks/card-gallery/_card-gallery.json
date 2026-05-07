@@ -1,0 +1,123 @@
+{
+  "definitions": [
+    {
+      "title": "Card Gallery",
+      "id": "card-gallery",
+      "plugins": {
+        "xwalk": {
+          "page": {
+            "resourceType": "core/franklin/components/block/v1/block",
+            "template": {
+              "name": "Card Gallery",
+              "model": "card-gallery",
+              "filter": "card-gallery"
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "Gallery Card",
+      "id": "gallery-card",
+      "plugins": {
+        "xwalk": {
+          "page": {
+            "resourceType": "core/franklin/components/block/v1/block/item",
+            "template": {
+              "name": "Gallery Card",
+              "model": "gallery-card"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "models": [
+    {
+      "id": "card-gallery",
+      "fields": [
+        {
+          "component": "text",
+          "valueType": "string",
+          "name": "sectionTitle",
+          "label": "Section Title",
+          "description": "Heading shown above the cards (e.g. 'CEAT Tyres for Every Terrain')"
+        }
+      ]
+    },
+    {
+      "id": "gallery-card",
+      "fields": [
+        {
+          "component": "reference",
+          "valueType": "string",
+          "name": "image",
+          "label": "Card Background Image",
+          "required": true
+        },
+        {
+          "component": "text",
+          "valueType": "string",
+          "name": "imageAlt",
+          "label": "Image Alt Text"
+        },
+        {
+          "component": "text",
+          "valueType": "string",
+          "name": "title",
+          "label": "Card Title",
+          "required": true,
+          "description": "E.g. 'SportDrive', 'CrossDrive AT', 'EnergyDrive EV'"
+        },
+        {
+          "component": "richtext",
+          "valueType": "string",
+          "name": "subtitle",
+          "label": "Subtitle / Description",
+          "description": "Short description shown under the title"
+        },
+        {
+          "component": "select",
+          "valueType": "string",
+          "name": "variant",
+          "label": "Card Variant",
+          "options": [
+            { "name": "Standard (square)", "value": "standard" },
+            { "name": "Wide (banner with CTAs)", "value": "wide" }
+          ]
+        },
+        {
+          "component": "text",
+          "valueType": "string",
+          "name": "primaryCtaText",
+          "label": "Primary CTA Text",
+          "description": "Only shown for Wide variant"
+        },
+        {
+          "component": "aem-content",
+          "valueType": "string",
+          "name": "primaryCtaLink",
+          "label": "Primary CTA Link"
+        },
+        {
+          "component": "text",
+          "valueType": "string",
+          "name": "secondaryCtaText",
+          "label": "Secondary CTA Text"
+        },
+        {
+          "component": "aem-content",
+          "valueType": "string",
+          "name": "secondaryCtaLink",
+          "label": "Secondary CTA Link"
+        }
+      ]
+    }
+  ],
+  "filters": [
+    {
+      "id": "card-gallery",
+      "components": ["gallery-card"]
+    }
+  ]
+}

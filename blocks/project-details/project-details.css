@@ -1,0 +1,99 @@
+/* ===== Project Details Block ===== */
+/* Theme: Blue #2d73ae / Teal #179E96 — matching nprpl.com */
+.project-details {
+  background: #fff;
+  max-width: 100%;
+  padding: 60px 0 80px;
+}
+
+.project-details-title {
+  font-size: 1.75rem;
+  font-weight: 500;
+  color: #2d73ae;
+  text-align: left;
+  margin-bottom: 16px;
+  max-width: 1140px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 15px;
+}
+
+.project-details-title::after {
+  display: none;
+}
+
+.project-details-grid {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 15px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+.project-details-card {
+  background: transparent;
+  border-radius: 0;
+  padding: 0 15px 32px;
+  box-shadow: none;
+  border-left: none;
+  transition: none;
+  position: relative;
+  overflow: visible;
+}
+
+.project-details-card::before {
+  display: none;
+}
+
+.project-details-card:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+/* First two items (Project Name + Scope of Work) span full width */
+.project-details-card:nth-child(1),
+.project-details-card:nth-child(2) {
+  grid-column: 1 / -1;
+}
+
+.project-details-label {
+  font-size: 1.75rem;
+  font-weight: 500;
+  color: #2d73ae;
+  text-transform: none;
+  letter-spacing: normal;
+  margin-bottom: 12px;
+}
+
+.project-details-value {
+  font-size: 1rem;
+  color: #000;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+.project-details-value p {
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 991px) {
+  .project-details-label {
+    font-size: 1.25rem;
+  }
+
+  .project-details-value {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .project-details {
+    padding: 40px 0 50px;
+  }
+
+  .project-details-grid {
+    grid-template-columns: 1fr;
+  }
+}
