@@ -34,6 +34,8 @@ import { registerEdsScripts } from './tools/eds-scripts.js';
 import { registerGenerateBlockFromDesign } from './tools/generate-block-from-design.js';
 import { registerProjectSummary } from './tools/project-summary.js';
 import { registerCrawlUrl } from './tools/crawl-url.js';
+import { registerEdsPageImport } from './tools/eds-page-import.js';
+import { registerComponentInterview } from './tools/component-interview.js';
 
 // Tools — Project routing (smart detection)
 import { registerDetectProjectType } from './tools/detect-project-type.js';
@@ -89,6 +91,8 @@ registerPerformanceCheck(server); // check_performance — analyze block perform
 registerGenerateBlockFromDesign(server); // generate_block_from_design — text / image / Figma → block (Adobe CDD)
 registerProjectSummary(server);   // project_summary — create/update workspace summary and session handoff
 registerCrawlUrl(server);         // crawl_url — fetch a URL and extract design + structural signals
+registerEdsPageImport(server);    // eds_page_import_skills_index, eds_block_html_structure, eds_generate_import_html
+registerComponentInterview(server); // component_interview — question set + JSON template per project type
 
 // Tools: Project & Configuration
 registerScaffoldProject(server);  // scaffold_project — new project setup guide
@@ -150,6 +154,8 @@ async function main() {
   console.error('   Tools: scaffold_block, scaffold_model, validate_block, explain_dom,');
   console.error('          lookup_block, search_block_collection, check_performance,');
   console.error('          generate_block_from_design, project_summary, crawl_url,');
+  console.error('          eds_page_import_skills_index, eds_block_html_structure, eds_generate_import_html,');
+  console.error('          component_interview,');
   console.error('          scaffold_project, eds_config, eds_scripts_guide');
   console.error('   Routing: detect_project_type (call first to decide EDS vs storefront)');
   console.error('   Storefront tools: scaffold_storefront_project, add_dropin, lookup_dropin,');
@@ -167,7 +173,8 @@ async function main() {
   console.error('            new-storefront-project, add-and-customize-dropin, storefront-from-design,');
   console.error('            new-aem-component, migrate-to-cloud-service, aem-dispatcher-task,');
   console.error('            new-aem65-component, aem65-replication-task, aem65-workflow-task,');
-  console.error('            figma-to-component, image-to-component, url-to-component');
+  console.error('            figma-to-component, image-to-component, url-to-component,');
+  console.error('            migrate-page-to-eds');
   console.error('   CLI: eds-validate (block validator/linter)');
 }
 
