@@ -44,6 +44,15 @@ export function registerDetectProjectType(server) {
         const verdict = `**${result.type.toUpperCase()}** (${result.confidence} confidence, commerce score ${result.score >= 0 ? '+' : ''}${result.score}, aemaacs score +${result.aemScore}, aem65lts score +${result.aem65Score})`;
         const sections = [];
         sections.push(`# Project type: ${verdict}\n\n${headlineByType[result.type]}`);
+        sections.push(`## 🚨 Ask the user clarifying questions BEFORE writing code\n\n` +
+            `Whatever the user asked for next — a new block / component / drop-in, a fix, a theme change, a migration, a refactor, a perf tweak — do NOT scaffold or edit files yet. Call \`clarify_task\` with the user's raw request (or an explicit intent) to get the canonical question list, then ask the user **one question per turn** using the IDE’s structured-question UI when available (\`vscode_askQuestions\` in VS Code, equivalent in Cursor / Cline / Continue). Only after the required answers are collected and confirmed should you call the matching scaffold / generate / migrate tool.`);
+        sections.push(`## 📌 First-trigger gate — \`.project-summary.md\`\n\n` +
+            `Before continuing with any other tool, ensure a workspace summary exists:\n\n` +
+            `1. Check whether \`.project-summary.md\` (or \`PROJECT_SUMMARY.md\`) is in the workspace root.\n` +
+            `2. **If missing** — call \`project_summary\` now with the same snapshots you passed here, plus \`styles/styles.css\` / \`scripts/scripts.js\` / \`scripts/initializers.js\` when present, and write the returned markdown to \`.project-summary.md\`.\n` +
+            `3. **If present** — read it once for context.\n` +
+            `4. **After every change** in this session (scaffolding, edits, migrations, drop-in installs, etc.), call \`project_summary\` again with \`existingSummary\` (current file content) + \`sessionChanges\` (one-line description) and overwrite \`.project-summary.md\`.\n\n` +
+            `The summary keeps the next session aware of architecture, theme, security/auth, and runtime state. Treat it as a hard rule, not a suggestion.`);
         if (result.installedDropins.length) {
             sections.push(`## Installed drop-ins (${result.installedDropins.length})\n\n${result.installedDropins.map((d) => `- \`${d}\``).join('\n')}`);
         }

@@ -3,7 +3,10 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { HARD_CONSTRAINTS } from '../knowledge/eds-conventions.js';
 
 const PROJECT_SUMMARY_WORKFLOW =
-  'Create or refresh a workspace summary file at `.project-summary.md` (or `PROJECT_SUMMARY.md`) by calling `project_summary` with the same workspace snapshots plus any global files you have (for example `styles/styles.css`, `scripts/scripts.js`, `scripts/initializers.js`). At the end of the task, call `project_summary` again with `existingSummary` + `sessionChanges` and update the same file so the next session starts with current architecture, theme, security/auth, and runtime notes.';
+  '**FIRST-TRIGGER GATE.** Before any other tool call in this session, check whether `.project-summary.md` (or `PROJECT_SUMMARY.md`) exists at the workspace root. ' +
+  'If it does NOT exist, call `project_summary` immediately with workspace snapshots (package.json, head.html, fstab.yaml, root/scripts/blocks/dropins listings, plus styles/styles.css + scripts/scripts.js + scripts/initializers.js when present) and write the returned markdown to `.project-summary.md`. ' +
+  'If it DOES exist, read it once at the start of the session for context. ' +
+  '**After every change you make** (scaffolding a block/component, editing styles/scripts, adding a drop-in, migrating a page, etc.), call `project_summary` again with `existingSummary` (current file content) + `sessionChanges` (one-line description of what changed in this turn) and overwrite `.project-summary.md` with the returned markdown. The summary must always reflect the latest architecture, theme, security/auth, and runtime notes so the next session starts with current context.';
 
 /**
  * Register MCP Prompts — pre-built templates for common EDS development tasks.
@@ -642,6 +645,15 @@ export function registerPrompts(server: McpServer) {
           type: 'text' as const,
           text:
             `Walk me through building a new component interactively. ${componentName ? `Working name: \`${componentName}\`. ` : ''}${purpose ? `Purpose: ${purpose}. ` : ''}Do NOT scaffold anything yet — collect requirements first.\n\n` +
+            `## 🚨 INTERACTIVE MODE — read this first\n\n` +
+            `This is a **strict turn-by-turn interview**. Do NOT batch questions. Do NOT proceed to scaffolding without explicit user confirmation. The flow is:\n\n` +
+            `1. Run Step 1 (detect_project_type) and Step 2 (component_interview) silently — these are setup, not user-facing.\n` +
+            `2. Then ask the questions from Step 4 **ONE AT A TIME**.\n` +
+            `3. After EACH question, your turn ENDS. **Stop generating. Wait for the user's reply.** Do not write the next question, do not assume an answer, do not call any other tool.\n` +
+            `4. When the user answers, ack briefly (one line max) and ask the NEXT question. Repeat until the question list is exhausted.\n` +
+            `5. Only then assemble the JSON, confirm it, and (on explicit “yes”) call the scaffolder.\n\n` +
+            `**If you find yourself about to write “Question 2” or “Next question” in the same turn as “Question 1” — STOP. Delete it. End the turn after Question 1.**\n\n` +
+            `Prefer the IDE’s structured-question UI when available (e.g. \`vscode_askQuestions\` in VS Code) so the user gets a proper input box per question. If unavailable, ask in plain chat — still ONE question per turn.\n\n` +
             `**Project summary rule:** ${PROJECT_SUMMARY_WORKFLOW}\n\n` +
             `## Step 1 — Detect project type\n\n` +
             `Call \`detect_project_type\` with workspace snapshots (package.json, head.html, fstab.yaml, scripts/ + blocks/ + scripts/__dropins__/ listings, root pom.xml + ui.apps/ + core/ listings if present). Map the result to interview type:\n\n` +
@@ -656,15 +668,18 @@ export function registerPrompts(server: McpServer) {
             `- **AEMaaCS:** verify \`AGENTS.md\` and \`.aem-skills-config.yaml\` exist with \`configured: true\`. If either is missing, call \`ensure_agents_md\` (variant=cloud-service) FIRST and have the user fill in \`.aem-skills-config.yaml\` before continuing. Read \`project\` / \`javaPackage\` / \`group\` from that file — never guess.\n` +
             `- **AEM 6.5 LTS:** read \`<artifactId>\` from root \`pom.xml\`, base package from \`core/pom.xml\` or existing \`core/src/main/java/\` tree. Never guess.\n` +
             `- **EDS / Storefront:** no pre-flight needed.\n\n` +
-            `## Step 4 — Ask questions ONE AT A TIME\n\n` +
-            `Ask the questions from \`component_interview\` in the order returned. Rules:\n\n` +
-            `- Ask **one question per turn** so the user can answer cleanly.\n` +
-            `- For "which fields do you need?" — present the field-type catalog as a table the user can pick from. Accept the user's exact field list (name + label + type). NEVER auto-add description / image / CTA fields the user did not request.\n` +
-            `- For variants — show the common-variants list as suggestions but accept anything.\n` +
-            `- For feature toggles — show defaults; the user can keep them or override.\n` +
-            `- For container blocks (EDS) — if the user says yes, run a mini sub-interview for the child item type (id + fields).\n` +
-            `- For storefront drop-in slot overrides — note them down for a follow-up \`customize_dropin_slot\` call after scaffolding.\n` +
-            `- Never invent answers. If a **required** field is missing, re-ask before proceeding.\n\n` +
+            `## Step 4 — Ask questions ONE AT A TIME (HARD RULE)\n\n` +
+            `Ask the questions from \`component_interview\` in the order returned. **Mandatory rules — violating any of these breaks the interview:**\n\n` +
+            `- **One question per turn.** After asking, your turn ENDS. Do not draft, list, or hint at later questions.\n` +
+            `- **Wait for the user’s reply** before asking the next one. No assumptions, no defaults applied silently.\n` +
+            `- **Use the IDE’s question UI** if available (\`vscode_askQuestions\` etc.) so the user gets an input field. Otherwise plain chat — still one at a time.\n` +
+            `- For “which fields do you need?” — first show the field-type catalog as a table, then ASK and stop. When the user replies, parse their list (name + label + type each). NEVER auto-add description / image / CTA fields the user did not request.\n` +
+            `- For variants — show the common-variants list as suggestions in the question, then stop. Accept whatever the user picks (including “none”).\n` +
+            `- For feature toggles — ask each toggle as its own question (or one bundled question with all toggles listed); show defaults; the user can keep or override.\n` +
+            `- For container blocks (EDS) — if the user says yes, run a mini sub-interview for the child item type (id + fields), still one question per turn.\n` +
+            `- For storefront drop-in slot overrides — ask which slots the user wants to customise; note them down for follow-up \`customize_dropin_slot\` calls after scaffolding.\n` +
+            `- Never invent answers. If a **required** field is missing or unclear, re-ask in the next turn.\n` +
+            `- Track progress with \`manage_todo_list\` — one todo per question — marking each completed only when the user has answered.\n\n` +
             `## Step 5 — Confirm\n\n` +
             `Show the user the completed JSON (the template from Step 2 with their answers filled in) and ask: "Should I scaffold this now?" Only proceed on explicit yes.\n\n` +
             `## Step 6 — Scaffold\n\n` +

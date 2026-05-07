@@ -195,6 +195,7 @@ export function registerComponentInterview(server) {
         const out = [];
         const label = projectType === 'aem65lts' ? 'AEM 6.5 LTS / AMS' : projectType === 'aemaacs' ? 'AEMaaCS' : projectType === 'storefront' ? 'EDS Commerce Storefront' : 'EDS';
         out.push(`# Component interview — ${label}\n\nNext scaffold tool: \`${spec.scaffoldTool}\`\n\n${spec.toolNotes}`);
+        out.push(`## 🚨 Interactive turn-by-turn rule\n\nThis is a **strict turn-by-turn interview**. The agent MUST:\n\n1. Ask the questions below **one at a time**.\n2. After EACH question, **end the turn**. Do not generate the next question. Do not call other tools. Do not assume answers.\n3. When the user replies, ack briefly and ask the NEXT question.\n4. Use the IDE\u2019s structured-question UI when available (e.g. \`vscode_askQuestions\` in VS Code) so the user gets an input field.\n5. NEVER auto-add fields, variants, or features the user did not name.\n6. After all questions are answered, show the assembled JSON and ask \u201cShould I scaffold this now?\u201d \u2014 only call \`${spec.scaffoldTool}\` on explicit yes.`);
         if (componentName || purpose) {
             out.push(`## Working name & purpose\n\n- **Name:** \`${componentName ?? '(not yet picked)'}\`\n- **Purpose:** ${purpose ?? '(not yet described)'}`);
         }
