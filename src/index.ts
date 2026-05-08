@@ -58,6 +58,7 @@ import { registerAemSkillsIndex } from './tools/aem-skills-index.js';
 import { registerEnsureAgentsMd } from './tools/ensure-agents-md.js';
 import { registerScaffoldAemComponent } from './tools/scaffold-aem-component.js';
 import { registerAemBestPractices } from './tools/aem-best-practices.js';
+import { registerAemDialogDesign } from './tools/aem-dialog-design.js';
 import { registerAemMigrationPattern } from './tools/aem-migration-pattern.js';
 import { registerAemDispatcherConfig } from './tools/aem-dispatcher-config.js';
 
@@ -122,6 +123,7 @@ registerAemSkillsIndex(server);            // aem_skills_index
 registerEnsureAgentsMd(server);            // ensure_agents_md
 registerScaffoldAemComponent(server);      // scaffold_aem_component
 registerAemBestPractices(server);          // aem_best_practices
+registerAemDialogDesign(server);           // aem_dialog_design
 registerAemMigrationPattern(server);       // aem_migration_pattern
 registerAemDispatcherConfig(server);       // aem_dispatcher_config (cloud + ams variants)
 
@@ -168,7 +170,7 @@ async function main() {
   console.error('                     customize_dropin_slot, style_dropin, scaffold_commerce_block,');
   console.error('                     validate_storefront, eds_storefront_config, commerce_events_guide');
   console.error('   AEMaaCS tools: aem_skills_index, ensure_agents_md, scaffold_aem_component,');
-  console.error('                  aem_best_practices, aem_migration_pattern, aem_dispatcher_config');
+  console.error('                  aem_best_practices, aem_dialog_design, aem_migration_pattern, aem_dispatcher_config');
   console.error('   AEM 6.5 LTS / AMS tools: aem65_skills_index, aem65_replication, aem65_workflow,');
   console.error('                            scaffold_aem65_component, aem_dispatcher_config (variant=ams),');
   console.error('                            ensure_agents_md (variant=6.5-lts)');
