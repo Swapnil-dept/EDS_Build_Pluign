@@ -63,7 +63,41 @@ This compiles TypeScript to `dist/` and makes the server executable.
 
 You can wire the server into **any** EDS / Storefront / AEM repo. Pick **one** of the methods below.
 
-#### Option A — Absolute path (simplest, recommended)
+#### Option A — Consume directly from GitHub (recommended — no clone, no build)
+
+In your **target project's** `.vscode/mcp.json`:
+
+```jsonc
+{
+  "servers": {
+    "eds-mcp-server": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "github:Swapnil-dept/EDS_Build_Pluign#<COMMIT_SHA>"]
+    }
+  }
+}
+```
+
+> ⚠️ **Pin to a commit SHA, not a branch name.** `npx` caches `github:` URLs aggressively — if you write `#dev`, you'll be stuck on whatever was at `dev` the first time you ran it, even after we push updates. Pinning to a SHA changes the cache key and forces a fresh fetch each time you bump it.
+
+To bump to the latest:
+
+1. Find the latest SHA on the [`dev` branch](https://github.com/Swapnil-dept/EDS_Build_Pluign/commits/dev).
+2. Replace `<COMMIT_SHA>` in your `mcp.json` with the short or full SHA (e.g. `ffc013c`).
+3. **Fully quit VS Code / Cursor** (Cmd+Q on macOS, not just Reload Window) and reopen.
+
+If the cache still misbehaves, one-time clear:
+
+```bash
+rm -rf ~/.npm/_npx
+```
+
+##### One-time bootstrap inside your project
+
+The first time you ask the agent anything in a new workspace, it should call `detect_project_type` (which is the first instruction it sees) and then `bootstrap_workspace_instructions`. The latter returns ready-to-write contents for `.github/copilot-instructions.md`, `.cursorrules`, and `AGENTS.md`. Once those files exist in your repo, the agent will route to `eds-mcp-server` tools automatically — you'll never need to type "use eds mcp server" again.
+
+#### Option B — Absolute path (developing / contributing to this server)
 
 In your **target project's** `.vscode/mcp.json` (create the file if missing):
 
@@ -87,7 +121,7 @@ node /ABSOLUTE/PATH/TO/EDS_Build_Pluign/dist/index.js
 # Press Ctrl+C to exit.
 ```
 
-#### Option B — `npm link` (system-wide command)
+#### Option C — `npm link` (system-wide command)
 
 From this repo:
 
@@ -112,7 +146,7 @@ This registers `eds-mcp-server` as a global command. Then in any project:
 
 Verify with `which eds-mcp-server`. If it prints a path, the link worked. To uninstall: `npm unlink -g eds-mcp-server`.
 
-#### Option C — Same-workspace (only when this repo IS your target)
+#### Option D — Same-workspace (only when this repo IS your target)
 
 ```jsonc
 {
@@ -133,8 +167,10 @@ Verify with `which eds-mcp-server`. If it prints a path, the link worked. To uni
 | Symptom | Fix |
 |---|---|
 | `Error: Cannot find module .../dist/index.js` | Run `npm run build` in this repo. The `dist/` folder is gitignored. |
-| `command not found: eds-mcp-server` (Option B) | Re-run `npm link` after each `npm run build`. Check `npm config get prefix` is on your `$PATH`. |
-| Tools don't appear in Copilot Chat | Restart VS Code after editing `.vscode/mcp.json`. Open the **Output → MCP** panel for stderr logs. |
+| Stale tools / missing `clarify_task` after pushing updates (Option A) | `npx` cached the old GitHub tarball. Bump the SHA in `mcp.json` (changes the cache key) or run `rm -rf ~/.npm/_npx`. |
+| `command not found: eds-mcp-server` (Option C) | Re-run `npm link` after each `npm run build`. Check `npm config get prefix` is on your `$PATH`. |
+| Tools don't appear in Copilot Chat | **Fully quit** VS Code (Cmd+Q), don't just Reload Window — the MCP child process needs a clean restart. Open the **Output → MCP** panel for stderr logs. |
+| Agent ignores the MCP server unless I name it | The workspace is missing `.github/copilot-instructions.md` / `.cursorrules` / `AGENTS.md`. Ask the agent to call `bootstrap_workspace_instructions` and write the returned files. |
 | Server starts but no logs | Logs go to **stderr** by design (stdout is reserved for JSON-RPC). Check the MCP output channel, not the terminal. |
 | `EACCES: permission denied` running `dist/index.js` | `chmod 755 dist/index.js dist/cli.js` (the build script does this — re-run `npm run build`). |
 

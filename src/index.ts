@@ -37,6 +37,7 @@ import { registerCrawlUrl } from './tools/crawl-url.js';
 import { registerEdsPageImport } from './tools/eds-page-import.js';
 import { registerComponentInterview } from './tools/component-interview.js';
 import { registerClarifyTask } from './tools/clarify-task.js';
+import { registerBootstrapWorkspace } from './tools/bootstrap-workspace.js';
 
 // Tools — Project routing (smart detection)
 import { registerDetectProjectType } from './tools/detect-project-type.js';
@@ -95,6 +96,7 @@ registerCrawlUrl(server);         // crawl_url — fetch a URL and extract desig
 registerEdsPageImport(server);    // eds_page_import_skills_index, eds_block_html_structure, eds_generate_import_html
 registerComponentInterview(server); // component_interview — question set + JSON template per project type
 registerClarifyTask(server);      // clarify_task — logical questions per intent (must-ask before scaffolding)
+registerBootstrapWorkspace(server); // bootstrap_workspace_instructions — emit copilot/cursor/agents files for the user's repo
 
 // Tools: Project & Configuration
 registerScaffoldProject(server);  // scaffold_project — new project setup guide
@@ -159,6 +161,7 @@ async function main() {
   console.error('          eds_page_import_skills_index, eds_block_html_structure, eds_generate_import_html,');
   console.error('          component_interview,');
   console.error('          clarify_task,');
+  console.error('          bootstrap_workspace_instructions,');
   console.error('          scaffold_project, eds_config, eds_scripts_guide');
   console.error('   Routing: detect_project_type (call first to decide EDS vs storefront)');
   console.error('   Storefront tools: scaffold_storefront_project, add_dropin, lookup_dropin,');
