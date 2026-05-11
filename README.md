@@ -224,6 +224,67 @@ If the server is running, Copilot will use the MCP tools automatically.
 | `validate_storefront` | Sanity-check a storefront project: dropin/postinstall sync, initializer wiring, config completeness, ACDL bootstrap, pre-LCP discipline. |
 | `eds_storefront_config` | Generate `default-site.json`, `default-config.json`, `demo-config.json` (PaaS/SaaS), `demo-config-aco.json` (Adobe Commerce Optimizer), `default-query.yaml`, `default-sitemap.yaml`, `head.html`, and `scripts/configs.js`. |
 | `commerce_events_guide` | Guide for Adobe Client Data Layer + `@dropins/tools` event bus. Includes setup of `@adobe/magento-storefront-events-sdk` + `@adobe/magento-storefront-event-collector` and analytics/cart-counter/custom-event snippets. |
+| `commerce_skills_setup` | Step-by-step guide for installing [Adobe Commerce AI Agent Skills](https://experienceleague.adobe.com/developer/commerce/storefront/boilerplate/ai-agent-skills/) via `aio commerce extensibility tools-setup`. Covers prerequisites (Node 22+, `@adobe/aio-cli`, Commerce plugin), the 6 installed skills (project-manager, researcher, block-developer, drop-in-developer, content-modeler, tester), agent-specific install directories, CI/headless flags, and troubleshooting. Pass an agent name (e.g. `"GitHub Copilot"`, `"Cursor"`) to get a tailored non-interactive install command. |
+
+---
+
+## Adobe Commerce AI Agent Skills
+
+Adobe Commerce AI Agent Skills give your coding agent deep knowledge about storefront architecture, drop-in APIs, block conventions, and best practices. Installed once per project via the Adobe I/O CLI, they work with all major agents (Cursor, GitHub Copilot, Claude Code, Windsurf, and more).
+
+### Quick setup
+
+```bash
+# 1. Ensure Node.js 22+
+node --version   # must be >= 22.0.0
+
+# 2. Install Adobe I/O CLI
+npm install -g @adobe/aio-cli
+
+# 3. Install the Commerce plugin
+aio plugins:install https://github.com/adobe-commerce/aio-cli-plugin-commerce
+
+# 4. Run from root of your AEM Boilerplate Commerce project
+aio commerce extensibility tools-setup
+#   → Select: AEM Boilerplate Commerce
+#   → Select: your agent (GitHub Copilot / Cursor / Claude Code / …)
+```
+
+Non-interactive (CI / scripted):
+
+```bash
+aio commerce extensibility tools-setup \
+  --starter-kit aem-boilerplate-commerce \
+  --agent "GitHub Copilot" \
+  --package-manager npm
+```
+
+> After install, **restart your coding agent** so it picks up the new skills and MCP configuration.
+
+### The 6 installed skills
+
+| Skill | What it does |
+|---|---|
+| **Project manager** | Scopes tasks and guides phased delivery before any code is written |
+| **Researcher** | Looks up drop-in APIs, slot names, event payloads, and TypeScript definitions before implementing |
+| **Block developer** | Builds EDS blocks using correct DOM patterns and CSS scoping |
+| **Drop-in developer** | Customizes drop-in components via containers, slots, events, and API functions |
+| **Content modeler** | Designs block table structures for both developers and CMS authors |
+| **Tester** | Verifies implementations in a real browser; checks Core Web Vitals and accessibility |
+
+### What gets installed
+
+| File | Purpose |
+|---|---|
+| `AGENTS.md` (project root) | Top-level instructions your agent reads at the start of every session |
+| `<agent-skills-dir>/` | Skill files (e.g. `.github/skills/` for GitHub Copilot, `.cursor/skills/` for Cursor) |
+| MCP config | Connects agent to `commerce-extensibility:search-commerce-docs` for live docs search |
+
+Use the `commerce_skills_setup` MCP tool to get agent-specific install commands and troubleshooting help.
+
+**Docs:** https://experienceleague.adobe.com/developer/commerce/storefront/boilerplate/ai-agent-skills/
+
+---
 
 ### AEM as a Cloud Service tools (Maven / Java stack)
 

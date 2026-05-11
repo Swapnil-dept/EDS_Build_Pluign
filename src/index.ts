@@ -52,6 +52,7 @@ import { registerScaffoldCommerceBlock } from './tools/scaffold-commerce-block.j
 import { registerValidateStorefront } from './tools/validate-storefront.js';
 import { registerEdsStorefrontConfig } from './tools/eds-storefront-config.js';
 import { registerCommerceEventsGuide } from './tools/commerce-events-guide.js';
+import { registerCommerceSkillsSetup } from './tools/commerce-skills-setup.js';
 
 // Tools — AEM as a Cloud Service (Java / Maven stack)
 import { registerAemSkillsIndex } from './tools/aem-skills-index.js';
@@ -117,6 +118,7 @@ registerScaffoldCommerceBlock(server);     // scaffold_commerce_block
 registerValidateStorefront(server);        // validate_storefront
 registerEdsStorefrontConfig(server);       // eds_storefront_config
 registerCommerceEventsGuide(server);       // commerce_events_guide
+registerCommerceSkillsSetup(server);       // commerce_skills_setup
 
 // Tools: AEM as a Cloud Service (Java / Maven stack)
 registerAemSkillsIndex(server);            // aem_skills_index
@@ -168,7 +170,8 @@ async function main() {
   console.error('   Routing: detect_project_type (call first to decide EDS vs storefront)');
   console.error('   Storefront tools: scaffold_storefront_project, add_dropin, lookup_dropin,');
   console.error('                     customize_dropin_slot, style_dropin, scaffold_commerce_block,');
-  console.error('                     validate_storefront, eds_storefront_config, commerce_events_guide');
+  console.error('                     validate_storefront, eds_storefront_config, commerce_events_guide,');
+  console.error('                     commerce_skills_setup');
   console.error('   AEMaaCS tools: aem_skills_index, ensure_agents_md, scaffold_aem_component,');
   console.error('                  aem_best_practices, aem_dialog_design, aem_migration_pattern, aem_dispatcher_config');
   console.error('   AEM 6.5 LTS / AMS tools: aem65_skills_index, aem65_replication, aem65_workflow,');
