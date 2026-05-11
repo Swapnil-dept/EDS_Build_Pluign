@@ -238,14 +238,9 @@ Adobe Commerce AI Agent Skills give your coding agent deep knowledge about store
 # 1. Ensure Node.js 22+
 node --version   # must be >= 22.0.0
 
-# 2. Install Adobe I/O CLI
-npm install -g @adobe/aio-cli
-
-# 3. Install the Commerce plugin
-aio plugins:install https://github.com/adobe-commerce/aio-cli-plugin-commerce
-
-# 4. Run from root of your AEM Boilerplate Commerce project
-aio commerce extensibility tools-setup
+# 2. From root of your AEM Boilerplate Commerce project — no global install needed
+npx @adobe/aio-cli@latest plugins:install https://github.com/adobe-commerce/aio-cli-plugin-commerce && \
+  npx @adobe/aio-cli@latest commerce extensibility tools-setup
 #   → Select: AEM Boilerplate Commerce
 #   → Select: your agent (GitHub Copilot / Cursor / Claude Code / …)
 ```
@@ -253,7 +248,8 @@ aio commerce extensibility tools-setup
 Non-interactive (CI / scripted):
 
 ```bash
-aio commerce extensibility tools-setup \
+npx @adobe/aio-cli@latest plugins:install https://github.com/adobe-commerce/aio-cli-plugin-commerce && \
+  npx @adobe/aio-cli@latest commerce extensibility tools-setup \
   --starter-kit aem-boilerplate-commerce \
   --agent "GitHub Copilot" \
   --package-manager npm

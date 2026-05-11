@@ -104,24 +104,20 @@ export function registerCommerceSkillsSetup(server: McpServer) {
       if (section === 'all' || section === 'prerequisites') {
         parts.push(
           `## Prerequisites\n\n` +
-            `Run these steps **before** installing the skills:\n\n` +
+            `> ℹ️ **This MCP plugin requires no installation** — it runs via \`npx\` automatically.\n` +
+            `> The steps below set up Adobe Commerce AI Agent Skills **inside your storefront project**.\n\n` +
             `### 1. Node.js 22+\n\n` +
-            `The Adobe I/O CLI requires Node 22+. Check your version:\n\n` +
+            `The \`aio\` CLI requires Node 22+. Check your version:\n\n` +
             `\`\`\`bash\nnode --version  # must be >= 22.0.0\n\`\`\`\n\n` +
             `Use [nvm](https://formulae.brew.sh/formula/nvm) to switch versions:\n\n` +
-            `\`\`\`bash\nnvm install 22\nnvm use 22\n\`\`\`\n\n` +
-            `### 2. Adobe I/O CLI\n\n` +
-            `\`\`\`bash\nnpm install -g @adobe/aio-cli\n\`\`\`\n\n` +
-            `Verify install:\n\n` +
-            `\`\`\`bash\naio --version\n\`\`\`\n\n` +
-            `### 3. Adobe I/O Commerce Plugin\n\n` +
-            `\`\`\`bash\naio plugins:install https://github.com/adobe-commerce/aio-cli-plugin-commerce\n\`\`\`\n\n` +
-            `Verify install:\n\n` +
-            `\`\`\`bash\naio commerce --help\n\`\`\`\n\n` +
-            `Plugin source: [${PLUGIN_REPO}](${PLUGIN_REPO})\n\n` +
-            `### 4. (Optional) Adobe I/O Login\n\n` +
-            `\`\`\`bash\naio auth login\n\`\`\`\n\n` +
-            `> Without authentication, the **Researcher** skill falls back to web search instead of the live documentation MCP tool. All other skills work without login.`,
+            `\`\`\`bash\nnvm install 22 && nvm use 22\n\`\`\`\n\n` +
+            `### 2. Run the setup (no global install needed)\n\n` +
+            `You can run the full setup with a single \`npx\` command — no global \`aio\` install required:\n\n` +
+            `\`\`\`bash\nnpx @adobe/aio-cli@latest plugins:install https://github.com/adobe-commerce/aio-cli-plugin-commerce && \\\n  npx @adobe/aio-cli@latest commerce extensibility tools-setup\n\`\`\`\n\n` +
+            `> Prefer a **persistent global install**? (faster for repeated use)\n>\n> \`\`\`bash\n> npm install -g @adobe/aio-cli\n> aio plugins:install https://github.com/adobe-commerce/aio-cli-plugin-commerce\n> \`\`\`\n> Plugin source: [${PLUGIN_REPO}](${PLUGIN_REPO})\n\n` +
+            `### 3. (Optional) Adobe I/O Login\n\n` +
+            `\`\`\`bash\naio auth login\n# or\nnpx @adobe/aio-cli@latest auth login\n\`\`\`\n\n` +
+            `> Without authentication the **Researcher** skill falls back to web search. All other skills work without login.`,
         );
       }
 
@@ -130,8 +126,8 @@ export function registerCommerceSkillsSetup(server: McpServer) {
         const agentBlock = targetAgent
           ? `\n\n**Target agent detected: \`${targetAgent}\`**\n` +
             `Skills will be installed to: \`${agentDir}\`\n\n` +
-            `#### Non-interactive install (recommended for ${targetAgent}):\n\n` +
-            `\`\`\`bash\naio commerce extensibility tools-setup \\\n` +
+            `#### Non-interactive install for ${targetAgent} (no global aio needed):\n\n` +
+            `\`\`\`bash\nnpx @adobe/aio-cli@latest plugins:install https://github.com/adobe-commerce/aio-cli-plugin-commerce && \\\n  npx @adobe/aio-cli@latest commerce extensibility tools-setup \\\n` +
             `  --starter-kit aem-boilerplate-commerce \\\n` +
             `  --agent "${targetAgent}" \\\n` +
             `  --package-manager npm\n\`\`\`\n`
@@ -139,7 +135,10 @@ export function registerCommerceSkillsSetup(server: McpServer) {
 
         parts.push(
           `## Install the Skills\n\n` +
-            `From the **root of your AEM Boilerplate Commerce project**, run:\n\n` +
+            `From the **root of your AEM Boilerplate Commerce project**, run one of:\n\n` +
+            `**Option A — no global install (npx):**\n\n` +
+            `\`\`\`bash\nnpx @adobe/aio-cli@latest plugins:install https://github.com/adobe-commerce/aio-cli-plugin-commerce && \\\n  npx @adobe/aio-cli@latest commerce extensibility tools-setup\n\`\`\`\n\n` +
+            `**Option B — with globally installed aio CLI:**\n\n` +
             `\`\`\`bash\naio commerce extensibility tools-setup\n\`\`\`\n\n` +
             `The command walks through **two prompts**:\n\n` +
             `1. **Select a starter kit** → choose **AEM Boilerplate Commerce**\n` +
@@ -200,8 +199,8 @@ export function registerCommerceSkillsSetup(server: McpServer) {
         parts.push(
           `## Troubleshooting\n\n` +
             `| Symptom | Fix |\n|---|---|\n` +
-            `| \`aio: command not found\` | \`npm install -g @adobe/aio-cli\` |\n` +
-            `| \`aio commerce: command not found\` | Run: \`aio plugins:install https://github.com/adobe-commerce/aio-cli-plugin-commerce\` |\n` +
+            `| \`aio: command not found\` | Use \`npx @adobe/aio-cli@latest\` instead, or run \`npm install -g @adobe/aio-cli\` once |\n` +
+            `| \`aio commerce: command not found\` | Run: \`npx @adobe/aio-cli@latest plugins:install https://github.com/adobe-commerce/aio-cli-plugin-commerce\` |\n` +
             `| Node version error from \`aio\` | Upgrade to Node 22+: \`nvm install 22 && nvm use 22\` |\n` +
             `| \`aio commerce extensibility tools-setup\` fails mid-install | Ensure you run from **project root** (where \`package.json\` is) |\n` +
             `| Skills not detected by agent | Restart the agent/IDE after install — skills require a fresh session to be picked up |\n` +
