@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { KARPATHY_GUIDELINES } from '../knowledge/karpathy-guidelines.js';
 const QUESTION_SETS = {
     'new-block': {
         summary: 'User wants a new EDS block (Universal Editor authored).',
@@ -293,6 +294,7 @@ export function registerClarifyTask(server) {
             out.push(`## Notes\n\n${set.notes.map((n) => `- ${n}`).join('\n')}`);
         }
         out.push(`---\n\n**After the user responds**, update the project summary file (\`.project-summary.md\`) per the first-trigger gate \u2014 see the project-summary rule.`);
+        out.push(KARPATHY_GUIDELINES);
         return { content: [{ type: 'text', text: out.join('\n\n') }] };
     });
 }

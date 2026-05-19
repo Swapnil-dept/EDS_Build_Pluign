@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { KARPATHY_GUIDELINES } from '../knowledge/karpathy-guidelines.js';
 
 /**
  * `clarify_task` — return the logical clarifying questions an AI coding agent
@@ -359,6 +360,8 @@ export function registerClarifyTask(server: McpServer) {
       }
 
       out.push(`---\n\n**After the user responds**, update the project summary file (\`.project-summary.md\`) per the first-trigger gate \u2014 see the project-summary rule.`);
+
+      out.push(KARPATHY_GUIDELINES);
 
       return { content: [{ type: 'text' as const, text: out.join('\n\n') }] };
     },
