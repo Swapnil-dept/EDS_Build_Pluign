@@ -186,6 +186,70 @@ If the server is running, Copilot will use the MCP tools automatically.
 
 ---
 
+## Copilot Instructions Templates
+
+To make GitHub Copilot automatically use the right tools and follow correct conventions for your project, add a `.github/copilot-instructions.md` to your repo. Pick the template that matches your project type:
+
+| Project type | Template file | When to use |
+|---|---|---|
+| AEM Edge Delivery Services | [`templates/copilot-instructions/eds.md`](templates/copilot-instructions/eds.md) | `aem-boilerplate` projects |
+| AEM EDS + Commerce Storefront | [`templates/copilot-instructions/eds-storefront.md`](templates/copilot-instructions/eds-storefront.md) | `aem-boilerplate-commerce` projects |
+| AEM as a Cloud Service | [`templates/copilot-instructions/aem-cloud-service.md`](templates/copilot-instructions/aem-cloud-service.md) | AEMaaCS Maven / Java projects |
+| AEM 6.5 LTS / Managed Services | [`templates/copilot-instructions/aem-managed-service.md`](templates/copilot-instructions/aem-managed-service.md) | AEM 6.5 LTS / AMS on-prem projects |
+
+### What each template includes
+
+Every template ships with:
+- **Project setup steps** — exact commands to run after cloning (install, build, local dev server)
+- **Mandatory workflow** — `detect_project_type` → project-summary gate → `clarify_task` → scaffold → validate
+- **Tool routing table** — maps every user intent to the correct MCP tool for that project type
+- **Project conventions** — naming, CSS scoping, secrets, file layout rules specific to the stack
+- **Hard rules** — guardrails the agent must never bypass
+- **🧠 Karpathy Guidelines** — 4 behavioral rules applied to every response:
+  1. *Think Before Coding* — surface assumptions and ambiguity before writing code
+  2. *Simplicity First* — minimum code that solves the problem, nothing speculative
+  3. *Surgical Changes* — touch only what was asked, match existing style
+  4. *Goal-Driven Execution* — define verifiable success criteria, plan multi-step tasks
+
+### How to add to your project
+
+**Option A — Copy the template manually**
+
+```bash
+mkdir -p .github
+# EDS project example:
+curl -o .github/copilot-instructions.md \
+  https://raw.githubusercontent.com/Swapnil-dept/EDS_Build_Pluign/main/templates/copilot-instructions/eds.md
+```
+
+**Option B — Let the agent do it (recommended)**
+
+In your target project (with `mcp.json` configured), ask Copilot:
+
+```
+Bootstrap this workspace — detect the project type and write the copilot instructions file
+```
+
+The agent will call `detect_project_type`, then `bootstrap_workspace_instructions` with the detected project type, and write the correct template to `.github/copilot-instructions.md`. Restart VS Code after.
+
+**Option C — Direct MCP tool call**
+
+```json
+{
+  "tool": "bootstrap_workspace_instructions",
+  "params": {
+    "projectType": "eds",
+    "includeCopilot": true,
+    "includeCursor": true,
+    "includeAgentsMd": true
+  }
+}
+```
+
+Valid `projectType` values: `eds` · `storefront` · `aemaacs` · `aem65lts`
+
+---
+
 ## Available Tools
 
 ### Routing — call FIRST in any new workspace
