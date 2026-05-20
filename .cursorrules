@@ -1,0 +1,12 @@
+# Cursor / Cline / Continue — EDS MCP Server Rules
+
+This workspace uses the **`eds-mcp-server`** MCP server. Always prefer its tools when the user asks about Adobe Edge Delivery Services (EDS), EDS + Adobe Commerce Storefront, AEM as a Cloud Service, or AEM 6.5 LTS / AMS.
+
+See `.github/copilot-instructions.md` for the full tool-routing table and mandatory workflow. Same rules apply here.
+
+Quick summary:
+1. `detect_project_type` first
+2. Maintain `.project-summary.md` (`project_summary` tool)
+3. `clarify_task` before any scaffolding — ask user one question per turn
+4. Scaffold / generate with the project-type-specific tool
+5. Validate (`validate_block`, `validate_storefront`, AEM Maven build)

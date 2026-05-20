@@ -1,0 +1,132 @@
+{
+  "definitions": [
+    {
+      "title": "Insurance Plan Card",
+      "id": "insurance-plan-card",
+      "plugins": {
+        "xwalk": {
+          "page": {
+            "resourceType": "core/franklin/components/block/v1/block",
+            "template": {
+              "name": "Insurance Plan Card",
+              "model": "insurance-plan-card"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "models": [
+    {
+      "id": "insurance-plan-card",
+      "fields": [
+        {
+          "component": "reference",
+          "name": "image",
+          "label": "Promo Background Image",
+          "required": false
+        },
+        {
+          "component": "text",
+          "name": "imageAlt",
+          "label": "Promo Image Alt Text",
+          "required": false,
+          "value": ""
+        },
+        {
+          "component": "richtext",
+          "name": "promoHeading",
+          "label": "Promo Headline",
+          "required": true,
+          "value": "Can't decide on a term insurance plan?"
+        },
+        {
+          "component": "text",
+          "name": "promoSubtext",
+          "label": "Promo Subheading",
+          "required": false,
+          "value": "Share your needs and get"
+        },
+        {
+          "component": "richtext",
+          "name": "promoBenefits",
+          "label": "Benefits List (bullet points)",
+          "required": false,
+          "value": "- Personalized suggestions\n- Customizable quotes"
+        },
+        {
+          "component": "text",
+          "name": "badgeText",
+          "label": "Plan Badge (e.g. Best Seller)",
+          "required": false,
+          "value": "Best Seller"
+        },
+        {
+          "component": "richtext",
+          "name": "planTitle",
+          "label": "Plan Name / Title",
+          "required": true,
+          "value": "Tata AIA Sampoorna Raksha Promise"
+        },
+        {
+          "component": "richtext",
+          "name": "pricingHeadline",
+          "label": "Pricing Headline",
+          "required": true,
+          "value": "Get ₹1 Crore Life cover @ ₹826/month"
+        },
+        {
+          "component": "text",
+          "name": "metaAge",
+          "label": "Metadata: Age",
+          "required": false,
+          "value": "25"
+        },
+        {
+          "component": "text",
+          "name": "metaCoverAge",
+          "label": "Metadata: Cover Till Age",
+          "required": false,
+          "value": "60 yrs"
+        },
+        {
+          "component": "text",
+          "name": "metaPaymentDuration",
+          "label": "Metadata: Payment Duration",
+          "required": false,
+          "value": "35 yrs"
+        },
+        {
+          "component": "richtext",
+          "name": "features",
+          "label": "Plan Features (3 items with icon, stat, label, description)",
+          "required": false
+        },
+        {
+          "component": "aem-content",
+          "name": "link",
+          "label": "CTA URL",
+          "required": true
+        },
+        {
+          "component": "text",
+          "name": "linkText",
+          "label": "CTA Button Text",
+          "required": true,
+          "value": "Customize plans for you"
+        },
+        {
+          "component": "multiselect",
+          "name": "classes",
+          "label": "Variants",
+          "required": false,
+          "options": [
+            { "name": "Wide", "value": "wide" },
+            { "name": "Dark background", "value": "dark" }
+          ]
+        }
+      ]
+    }
+  ],
+  "filters": []
+}
