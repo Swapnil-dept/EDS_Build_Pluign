@@ -2,44 +2,78 @@ import { z } from 'zod';
 const SPECS = {
     eds: {
         scaffoldTool: 'scaffold_block',
-        toolNotes: 'For Universal Editor authoring use the canonical UE field types. Pair with `scaffold_model` if you need separate component-definitions / models / filters JSON for nested container blocks.',
+        toolNotes: 'For Universal Editor authoring use the canonical UE field types. If the user has a design (Figma / image / screenshot) use `generate_block_from_design` instead — it runs vision analysis, classifies the pattern, and produces a pixel-perfect scaffold. Pair with `scaffold_model` for container blocks that need separate definitions/models/filters JSON.',
         fieldTypes: [
             { type: 'text', use: 'Single-line text', example: '{ "name": "title", "type": "text", "label": "Title" }' },
             { type: 'textarea', use: 'Multi-line plain text', example: '{ "name": "summary", "type": "textarea", "label": "Summary" }' },
             { type: 'richtext', use: 'Formatted prose (bold, italic, links)', example: '{ "name": "body", "type": "richtext", "label": "Body" }' },
             { type: 'reference', use: 'Image / asset picker (DAM)', example: '{ "name": "image", "type": "reference", "label": "Image" }' },
-            { type: 'aem-content', use: 'Page or fragment picker', example: '{ "name": "ctaTarget", "type": "aem-content", "label": "CTA target" }' },
-            { type: 'select', use: 'Single value from a fixed list (variants, alignment)', example: '{ "name": "alignment", "type": "select", "label": "Alignment" }' },
-            { type: 'multiselect', use: 'Multiple values from a list (tags, categories)', example: '{ "name": "tags", "type": "multiselect", "label": "Tags" }' },
-            { type: 'boolean', use: 'On / off toggle', example: '{ "name": "autoplay", "type": "boolean", "label": "Autoplay" }' },
-            { type: 'number', use: 'Numeric input (item count, delay)', example: '{ "name": "itemsPerRow", "type": "number", "label": "Items per row" }' },
+            { type: 'aem-content', use: 'Page or fragment picker (for links / CTAs)', example: '{ "name": "ctaTarget", "type": "aem-content", "label": "CTA target" }' },
+            { type: 'select', use: 'Single value from a fixed list (alignment, heading level)', example: '{ "name": "alignment", "type": "select", "label": "Alignment" }' },
+            { type: 'multiselect', use: 'Multiple values — use `classes` for CSS variant toggles', example: '{ "name": "classes", "type": "multiselect", "label": "Variants" }' },
+            { type: 'boolean', use: 'On / off toggle (autoplay, show caption)', example: '{ "name": "autoplay", "type": "boolean", "label": "Autoplay" }' },
+            { type: 'number', use: 'Numeric input (item count, animation delay ms)', example: '{ "name": "itemsPerRow", "type": "number", "label": "Items per row" }' },
         ],
-        commonVariants: ['dark', 'light', 'wide', 'centered', 'compact', 'reversed', '<colour>-bg'],
+        commonVariants: ['dark', 'light', 'wide', 'centered', 'compact', 'reversed', 'split', '<colour>-bg'],
         featureToggles: [
+            { name: 'modelType', question: 'Adobe canonical model type — standalone (single table, one unit) / collection (repeating rows) / configuration (key-value config rows) / auto-blocked (default content transformed by JS)?', default: '(inferred from pattern)' },
+            { name: 'pattern', question: 'Block archetype — hero / cards / accordion / carousel / columns / tabs / custom?', default: 'custom' },
             { name: 'hasMedia', question: 'Does the block have an image / video column?', default: 'false' },
             { name: 'interactive', question: 'Does the block need JS event handlers (accordion / tabs / carousel)?', default: 'false' },
-            { name: 'layout', question: 'CSS layout: grid (cards), flex (side-by-side), stack (vertical)?', default: 'stack' },
-            { name: 'container', question: 'Is this a container block with repeating items (e.g. cards → card)? If yes, list the item type and its fields.', default: 'no' },
+            { name: 'layout', question: 'CSS layout (custom pattern only): grid (card grids), flex (side-by-side), stack (vertical)?', default: 'stack' },
+            { name: 'container', question: 'Is this a container block with repeating items (e.g. cards → card, tabs → tab)? If yes, provide item type + its fields.', default: 'no' },
+            { name: 'aboveFold', question: 'Is this block above the fold (first viewport, LCP-critical)?', default: 'false' },
+            { name: 'naming', question: 'CSS class naming: flat (.block-element, default) or BEM (.block__element--modifier)?', default: 'flat' },
+            { name: 'thirdParty', question: 'Does the block require any third-party library (map SDK, video player, chart)?', default: 'none' },
+            { name: 'hasDesign', question: 'Is there a design to build from? (Figma URL / screenshot / image path)', default: 'none' },
         ],
         questions: [
             { id: 'blockName', question: 'Block name in kebab-case (e.g. `hero`, `promo-card`)?', required: true, hint: 'Lowercase letters, digits, and hyphens only.' },
             { id: 'purpose', question: 'What does this block do? Describe in one sentence — used in README and code comments.', required: false },
-            { id: 'fields', question: 'Which authoring fields do you need? For each: name (camelCase) + label + type (see field-type catalog).', required: true, hint: 'List every field. Example: title (text), body (richtext), image (reference), cta (aem-content).' },
-            { id: 'variants', question: 'Any visual variants you want as CSS class modifiers? (Pick from common list or invent your own.)', required: false },
-            { id: 'features', question: 'Answer the feature toggles (hasMedia, interactive, layout, container).', required: false },
-            { id: 'items', question: 'If this is a CONTAINER block, what is the child item type and its fields? (Skip otherwise.)', required: false, hint: 'Example: cards → item id `card`, fields: image, title, description.' },
+            { id: 'modelType', question: 'Which of Adobe’s 4 canonical content model types does this block use?', required: false, hint: 'standalone → single table, one unit (hero, banner, blockquote, promo). collection → repeating row pattern (cards, carousel, accordion, tabs). configuration → key-value config rows, API-driven (blog listing, search, locator). auto-blocked → authors write default content that JS transforms (YouTube embed, tabs from a list). Usually inferred from pattern — ask only when pattern is “custom” or ambiguous.' },
+            { id: 'pattern', question: 'Which pattern best describes this block: **hero** (full-width media+text) / **cards** (repeating grid) / **accordion** (expand/collapse) / **carousel** (scrolling slides) / **columns** (side-by-side) / **tabs** (switchable panels) / **custom** (unique layout)?', required: true, hint: 'This selects the JS+CSS archetype template. When unsure, describe the layout and the tool will classify it.' },
+            { id: 'fields', question: 'Which authoring fields do you need? For each: name (camelCase) + label + type (see field-type catalog).', required: true, hint: 'List every field. Example: title (text), body (richtext), image (reference), cta (aem-content). Use shared prefixes: image+imageAlt, link+linkText+linkTitle.' },
+            { id: 'variants', question: 'Any visual variants as CSS class modifiers? Pick from common list or name your own.', required: false, hint: 'These become options in the auto-generated `classes` multiselect field. Example: dark, wide, centered.' },
+            { id: 'container', question: 'Is this a **container block** with repeating children (cards grid, accordion with items, carousel with slides)? If yes: child item type id + its fields.', required: false, hint: 'Example: cards → item id `card`, fields: image, imageAlt, title, description, link, linkText.' },
+            { id: 'aboveFold', question: 'Is this block above the fold / LCP-critical? (true / false)', required: false, hint: 'If true: first media must be `loading="eager" fetchpriority="high"`. Total pre-LCP JS+CSS budget = 100 KB.' },
+            { id: 'hasMedia', question: 'Does the block have an image or video? (true / false)', required: false },
+            { id: 'interactive', question: 'Does the block need JS interactivity? (true / false)', required: false, hint: 'Accordion toggle, carousel prev/next, tab switching, modal open, lazy-load trigger.' },
+            { id: 'thirdParty', question: 'Any third-party library required? Name it or skip.', required: false, hint: 'Load via IntersectionObserver inside decorate() — never in head.html.' },
+            { id: 'naming', question: 'CSS class naming: **flat** (`.block-element`, default, Vitamix/Ingredion style) or **BEM** (`.block__element--modifier`, Volvo Trucks style)?', required: false },
+            { id: 'design', question: 'Do you have a design file? Paste Figma URL, file path, or image URL.', required: false, hint: 'If provided, use `generate_block_from_design` instead of `scaffold_block` — it produces a pixel-perfect scaffold via vision analysis.' },
         ],
         jsonTemplate: `{
-  "blockName": "...",
+  "blockName":   "...",
   "description": "...",
-  "variant": "...",            // optional
-  "layout": "stack",           // grid | flex | stack
-  "hasMedia": false,
+  "pattern":     "custom",      // hero | cards | accordion | carousel | columns | tabs | custom
+  "variant":     "...",         // optional primary variant
+  "naming":      "flat",        // flat | bem
+  "layout":      "stack",       // grid | flex | stack (custom pattern only)
+  "hasMedia":    false,
   "interactive": false,
+  "aboveFold":   false,
   "fields": [
-    { "name": "title", "type": "text",      "label": "Title" },
-    { "name": "body",  "type": "richtext",  "label": "Body" },
-    { "name": "image", "type": "reference", "label": "Image" }
+    { "name": "title",    "type": "text",      "label": "Title" },
+    { "name": "body",     "type": "richtext",  "label": "Body" },
+    { "name": "image",    "type": "reference", "label": "Image" },
+    { "name": "imageAlt", "type": "text",      "label": "Image Alt" },
+    { "name": "link",     "type": "aem-content","label": "CTA URL" },
+    { "name": "linkText", "type": "text",      "label": "CTA Label" }
+  ],
+  // For container blocks only:
+  "items": [
+    {
+      "id":     "card",
+      "title":  "Card",
+      "fields": [
+        { "name": "image",    "type": "reference", "label": "Card Image" },
+        { "name": "imageAlt", "type": "text",      "label": "Image Alt" },
+        { "name": "title",    "type": "text",      "label": "Card Title" },
+        { "name": "body",     "type": "richtext",  "label": "Card Body" },
+        { "name": "link",     "type": "aem-content","label": "Card Link" },
+        { "name": "linkText", "type": "text",      "label": "Link Label" }
+      ]
+    }
   ]
 }`,
     },
@@ -202,6 +236,74 @@ export function registerComponentInterview(server) {
         out.push(`## Field-type catalog\n\nUse these exact \`type\` values when collecting fields:\n\n| type | use | example |\n| --- | --- | --- |\n${spec.fieldTypes.map((f) => `| \`${f.type}\` | ${f.use} | \`${f.example.replace(/\|/g, '\\|')}\` |`).join('\n')}`);
         out.push(`## Common variants\n\n${spec.commonVariants.map((v) => `- ${v}`).join('\n')}`);
         out.push(`## Feature toggles\n\n${spec.featureToggles.map((t) => `- **${t.name}** — ${t.question}${t.default ? ` _(default: ${t.default})_` : ''}`).join('\n')}`);
+        // EDS-specific complexity guides
+        if (projectType === 'eds') {
+            out.push(`## 4 Canonical Content Model Types (Adobe)
+
+Choose the type that matches how authors will structure the block in the document:
+
+| Type | Authoring table shape | Examples | scaffold_block tip |
+|---|---|---|---|
+| **standalone** | Single table, one set of rows/cells | hero, banner, blockquote, promo | Default — no \`items[]\` needed |
+| **collection** | Repeating row pattern, each row = one child | cards, carousel, accordion, tabs | Pass \`items[{id, fields}]\` |
+| **configuration** | Key-value config rows (\`key \| value\`) | blog listing, product search, locator | Use \`textarea\`/\`text\` fields for API params |
+| **auto-blocked** | Author writes default content; JS transforms it | YouTube embed, tabs from a list | No \`_block.json\` model needed; \`decorate()\` does the transform |
+
+**Quick rule:** “list of identical items” → collection. “shows API results” → configuration. “transforms what the author typed” → auto-blocked. Everything else → standalone.`);
+            out.push(`## Pattern → scaffold tool routing
+
+| User says… | Pattern | Tool |
+|---|---|---|
+| "hero", "banner", "full-width image + text" | \`hero\` | \`scaffold_block\` or \`generate_block_from_design\` |
+| "cards", "grid", "repeating items", "articles" | \`cards\` | \`scaffold_block\` (set \`items\`) |
+| "FAQ", "accordion", "expand/collapse" | \`accordion\` | \`scaffold_block\` |
+| "carousel", "slider", "gallery", "testimonials" | \`carousel\` | \`scaffold_block\` |
+| "columns", "side by side", "split", "two-up" | \`columns\` | \`scaffold_block\` |
+| "tabs", "tabbed", "switchable panels" | \`tabs\` | \`scaffold_block\` (set \`items\`) |
+| "I have a Figma/screenshot/image" | any | **\`generate_block_from_design\`** (vision + pattern classifier) |
+| "not sure / something else" | \`custom\` | \`scaffold_block\` |`);
+            out.push(`## Container block complexity — when to use the block→item pattern
+
+Use a **container + item** structure when:
+- The block contains a **repeating set of structurally identical children** (each child has image + title + body + link)
+- Items need their own UE authored fields (the author adds/removes items in Universal Editor)
+- Examples: \`cards\` → \`card\` items, \`tabs\` → \`tab\` items, \`accordion\` → \`accordion-item\` items, \`carousel\` → \`slide\` items
+
+**Container block JSON contract** — three things must be wired together:
+\`\`\`
+_block.json
+  definitions[0]  container  →  filter: "<blockName>"  (block template)
+  definitions[1]  item       →  resourceType: .../block/v1/block/item, model: "<itemId>"
+  models[0]       item model →  has its own field list (+ classes multiselect)
+  filters[0]      { id: "<blockName>", components: ["<itemId>"] }
+\`\`\`
+
+**Leaf block** (no repeating items) — single definition + single model, no filter.
+
+**Nested containers** (e.g. tabs containing a cards grid):
+- Declare one filter entry per nesting level
+- Only the outermost block gets \`filter\` on its template
+- Inner items use \`resourceType: .../block/v1/block/item\`
+
+**Sub-questions to ask when the user says "container":**
+1. What is the child item id? (e.g. \`card\`, \`tab\`, \`slide\`)
+2. What fields does each item have? (name + label + type per field)
+3. What is the maximum expected number of items? (affects DA row hint)
+4. Can items contain further nested items (e.g. tabs → cards)? If yes, repeat for each level.`);
+            out.push(`## Above-fold / LCP performance rules
+
+If \`aboveFold: true\` or \`pattern: "hero"\`:
+- **First media** → \`loading="eager"\` + \`fetchpriority="high"\` on \`<img>\`
+- **Inline first-fold CSS** — keep selector count low, no \`@import\`
+- **No lazy-loaded scripts** in \`decorate()\` for above-fold blocks
+- **Total pre-LCP JS + CSS budget = 100 KB** (blocks/name.js + blocks/name.css combined)
+- After scaffolding, run \`check_performance\` with \`isAboveFold: true\`
+
+If \`aboveFold: false\`:
+- Use \`IntersectionObserver\` for heavy dependencies (map SDK, video player, chart lib)
+- Load third-party scripts via \`loadScript()\` inside the observer callback
+- Place the block in \`loadLazy()\` tier; heavy analytics go in \`delayed.js\` (≥3s after LCP)`);
+        }
         out.push(`## Questions to ask the user (in order)\n\nAsk these one at a time, accept the user's exact wording, do NOT invent extra fields. Stop and ask follow-ups before scaffolding if any **required** answer is missing.\n\n${spec.questions.map((q, i) => `${i + 1}. ${q.required ? '**[required]** ' : ''}${q.question}${q.hint ? `\n   - _Hint:_ ${q.hint}` : ''}`).join('\n')}`);
         out.push(`## JSON template to fill from the user's answers\n\nOnce the user has answered, populate this and call \`${spec.scaffoldTool}\`:\n\n\`\`\`json\n${spec.jsonTemplate}\n\`\`\``);
         out.push(`## Mandatory rules\n\n- Pass through **only** the fields the user named — never auto-add description, image, or CTA fields the user did not request.\n- Re-confirm the JSON with the user before calling \`${spec.scaffoldTool}\`.\n- After scaffolding, run any project-specific validation (\`validate_block\` for EDS, \`validate_storefront\` for storefront, build/install for AEM Maven projects).`);

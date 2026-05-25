@@ -63,6 +63,7 @@ import { registerAemDialogDesign } from './tools/aem-dialog-design.js';
 import { registerAemSecurityPipeline } from './tools/aem-security-pipeline.js';
 import { registerAemMigrationPattern } from './tools/aem-migration-pattern.js';
 import { registerAemDispatcherConfig } from './tools/aem-dispatcher-config.js';
+import { registerAemAdminUi } from './tools/aem-admin-ui.js';
 
 // Tools — AEM 6.5 LTS / AMS (on-prem & Adobe Managed Services)
 import { registerAem65SkillsIndex } from './tools/aem65-skills-index.js';
@@ -130,6 +131,7 @@ registerAemDialogDesign(server);           // aem_dialog_design
 registerAemSecurityPipeline(server);       // aem_security_pipeline
 registerAemMigrationPattern(server);       // aem_migration_pattern
 registerAemDispatcherConfig(server);       // aem_dispatcher_config (cloud + ams variants)
+registerAemAdminUi(server);               // aem_admin_ui — Coral UI 3 / Sling Servlets / Service Users
 
 // Tools: AEM 6.5 LTS / AMS
 registerAem65SkillsIndex(server);          // aem65_skills_index

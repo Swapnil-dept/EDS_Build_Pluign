@@ -3,31 +3,69 @@
  *
  * Pure functions that generate EDS-compliant block files.
  * No LLM calls — deterministic scaffolding.
+ *
+ * Patterns derived from production EDS repos:
+ *  - aemsites/vitamix    (hero, cards, carousel)
+ *  - aemsites/ingredion  (accordion, columns)
+ *  - Netcentric/vg-volvotrucks-us-rd  (BEM naming, v2 blocks)
  */
+export type BlockPattern = 'hero' | 'cards' | 'accordion' | 'carousel' | 'columns' | 'tabs' | 'custom';
 export declare function generateBlockJS(blockName: string, options?: {
+    pattern?: BlockPattern;
     variant?: string;
     interactive?: boolean;
     hasMedia?: boolean;
     description?: string;
+    /** 'bem' = .block__element--modifier  /  'flat' = .block-element (default) */
+    naming?: 'bem' | 'flat';
 }): string;
 export declare function generateBlockCSS(blockName: string, options?: {
+    pattern?: BlockPattern;
     variant?: string;
     hasMedia?: boolean;
     layout?: 'grid' | 'flex' | 'stack';
+    /** 'bem' = .block__element--modifier  /  'flat' = .block-element (default) */
+    naming?: 'bem' | 'flat';
 }): string;
-type ModelField = {
+export type ModelField = {
     name: string;
     type: string;
     label: string;
     required?: boolean;
     multi?: boolean;
+    /**
+     * When true the `name` is treated as a raw CSS-selector DOM path
+     * (e.g. "div:nth-child(1)>picture:nth-child(1)>img:nth-child(3)[src]")
+     * used by the xwalk / Universal Editor to bind directly to a DOM node.
+     * The valueType will be forced to "string".
+     */
+    domPath?: boolean;
+    /** Default value shown in UE property panel. */
+    defaultValue?: string;
 };
 /**
  * Generate a single entry for component-models.json.
- * Returns a JSON string of `{ id, fields: [...] }` ready to be appended
- * to the top-level array in the file.
+ *
+ * Automatically prepends `image`+`imageAlt` for reference fields and
+ * appends a `classes` multiselect (variants) unless the caller already
+ * included one.  This mirrors real-world production repos (vitamix, ingredion).
+ *
+ * @param blockName  - Block id (kebab-case)
+ * @param fields     - Caller-supplied fields (without `classes`)
+ * @param options
+ *   - pattern        - Block archetype; drives default variant options in `classes`
+ *   - extraVariants  - Extra variant options merged into `classes`
+ *   - omitClasses    - Set true to suppress the auto-appended `classes` field
  */
-export declare function generateComponentModel(blockName: string, fields: Array<ModelField>): string;
+export declare function generateComponentModel(blockName: string, fields: Array<ModelField>, options?: {
+    pattern?: BlockPattern;
+    extraVariants?: Array<{
+        name: string;
+        value: string;
+    }>;
+    /** Suppress the auto-appended `classes` multiselect. */
+    omitClasses?: boolean;
+}): string;
 type DefinitionOptions = {
     title?: string;
     /** UE group this component belongs to (e.g. "Blocks", "Default Content"). */
@@ -38,43 +76,57 @@ type DefinitionOptions = {
     filter?: string;
     /** If true, emit an item definition (resourceType .../block/v1/block/item). */
     isItem?: boolean;
+    /**
+     * DA editor hints — how many rows/columns the block table starts with.
+     * Emit `plugins.da` if provided.
+     */
+    daRows?: number;
+    daColumns?: number;
 };
 /**
  * Generate a single component entry for component-definition.json.
  *
+ * Emits both `plugins.xwalk` (Universal Editor) and `plugins.da`
+ * (Document Authoring) when row/column hints are provided.
+ *
  * The canonical file shape is:
  *   { "groups": [ { "title": "Blocks", "id": "blocks", "components": [ ... ] } ] }
- *
- * This generator returns the inner component object ready to append to
- * `groups[i].components`. Consumers should merge it into the existing
- * group (default: "Blocks").
  */
 export declare function generateComponentDefinition(blockName: string, titleOrOptions?: string | DefinitionOptions, group?: string): string;
 /**
  * Generate an entry for component-filters.json.
- * The filter `id` equals the block id (UE convention) \u2014 NOT `<block>-filter`.
+ * The filter `id` equals the block id (UE convention) — NOT `<block>-filter`.
  */
 export declare function generateComponentFilter(blockName: string, allowedChildren?: string[]): string;
 /**
  * Generate the **single** block-scoped UE config file at
  * `blocks/<blockName>/_<blockName>.json`.
  *
- * This is the canonical file shape used by aem-boilerplate-xwalk: each
- * block ships ONE JSON file that bundles its `definitions`, `models`, and
- * `filters` together. The project build aggregates every block's
- * `_<name>.json` into the project-root `component-definitions.json`,
- * `component-models.json`, and `component-filters.json` — authors never
- * edit those root files by hand.
+ * Each block ships ONE JSON file bundling `definitions`, `models`, and
+ * `filters`.  The project build aggregates these into the project-root
+ * `component-definitions.json` / `component-models.json` /
+ * `component-filters.json` — authors never edit those root files by hand.
+ *
+ * Enhancement: auto-injects `classes` multiselect (variants) and `da`
+ * plugin hints derived from the block pattern.
  */
 export declare function generateBlockJsonFile(blockName: string, fields: Array<ModelField>, options?: {
     title?: string;
     group?: string;
+    pattern?: BlockPattern;
     items?: Array<{
         id: string;
         title?: string;
         fields: Array<ModelField>;
     }>;
     allowedChildren?: string[];
+    extraVariants?: Array<{
+        name: string;
+        value: string;
+    }>;
+    /** DA editor row/column hints (default: 1 row, 2 columns for leaf blocks) */
+    daRows?: number;
+    daColumns?: number;
 }): string;
 export declare function generateSampleContent(blockName: string, fields: Array<{
     name: string;
