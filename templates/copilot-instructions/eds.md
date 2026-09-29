@@ -42,9 +42,17 @@ Edit `head.html` in the repo root; changes are served automatically.
    - Present → read it for context.
    - After every change → call `project_summary` again with `existingSummary` + `sessionChanges` and overwrite.
 
-3. **Clarify before scaffolding:** call `clarify_task` (intent: `new-block` / `fix-bug` / etc.). Ask the user **one question per turn**. Never auto-add fields.
+3. **MANDATORY clarification gate:** call `clarify_task(intent: "new-block")` AND `component_interview(projectType: "eds")`. Ask the user **one question per turn**, wait for the reply, then ask the next. Collect at minimum:
+   - **`variantCheck`** — first: run `lookup_block` + scan `blocks/`; ask "could this be a CSS variant of an existing block?"
+     - YES → call `scaffold_block(variantOf: "<parent>")` — emits CSS-only override, no new JS or JSON
+     - NO  → proceed with `confirmedNewBlock: true`
+   - **`description`** — what the block does
+   - **`pattern`** — `hero` | `cards` | `accordion` | `carousel` | `columns` | `tabs` | `custom`
+   - **`fields`** — every authoring field the user named (never auto-add)
+   
+   > `scaffold_block` enforces **two gates** at runtime: (1) variant check — fires if neither `variantOf` nor `confirmedNewBlock` is set; (2) clarification check — fires if `description`, `pattern`, or `fields` are missing.
 
-4. **Scaffold:** once answers are collected, call `scaffold_block` + `scaffold_model`.
+4. **Scaffold:** only after all required answers are collected, call `scaffold_block` (or `generate_block_from_design` if the user provided a Figma URL or screenshot).
 
 5. **Validate after every change:**
    - `validate_block` — EDS coding standards
@@ -65,6 +73,10 @@ Edit `head.html` in the repo root; changes are served automatically.
 | Look up an existing block pattern | `lookup_block` |
 | Search Adobe Block Collection | `search_block_collection` |
 | Customise scripts.js / delayed.js | `eds_scripts_guide` |
+| Plan a full-page build/migration | `scaffold_migration_plan` (writes to `.migration/plans/`) — recommended for screenshot-only or new-brand pages |
+| Read/refresh the durable project map | `generate_project_md` (`PROJECT.md`) — read it first |
+| Multiple brands/themes in one repo | `eds_multibrand_theming_guide` |
+| Verify a built/migrated page | `eds_visual_verification_guide` |
 
 ---
 
@@ -84,6 +96,7 @@ Edit `head.html` in the repo root; changes are served automatically.
 
 ## Hard rules
 
+- **Never run git commands** (commit, push, pull, branch, merge, rebase, reset, stash). Staging and syncing is the user's call — even if explicitly asked, remind them to do it themselves.
 - **Never invent fields** the user did not name.
 - **Never bypass `detect_project_type`** — wrong scaffolder = broken code.
 - **One question per turn** during interviews. Wait for the user's reply before continuing.

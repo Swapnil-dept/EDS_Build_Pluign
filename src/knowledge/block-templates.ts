@@ -3,201 +3,1569 @@
  *
  * Pure functions that generate EDS-compliant block files.
  * No LLM calls — deterministic scaffolding.
+ *
+ * Patterns derived from production EDS repos:
+ *  - aemsites/vitamix    (hero, cards, carousel)
+ *  - aemsites/ingredion  (accordion, columns)
+ *  - Netcentric/vg-volvotrucks-us-rd  (BEM naming, v2 blocks)
  */
 
-// ─── Block JS Template ──────────────────────────────────────────
+// ─── Block pattern type ─────────────────────────────────────────
 
-export function generateBlockJS(blockName: string, options?: {
+export type BlockPattern =
+  | 'hero'
+  | 'cards'
+  | 'accordion'
+  | 'carousel'
+  | 'columns'
+  | 'tabs'
+  | 'custom';
+
+// ─── Pattern-based JS generators ───────────────────────────────
+
+function generateHeroJS(blockName: string, opts: { naming: 'bem' | 'flat'; variant?: string }): string {
+  const { naming, variant } = opts;
+  const cls = (part: string) => naming === 'bem' ? `${blockName}__${part}` : `${blockName}-${part}`;
+  const mod = (part: string) => naming === 'bem' ? `${blockName}--${part}` : part;
+  const variantBlock = variant
+    ? `
+  // Variant: ${variant}
+  if (block.classList.contains('${mod(variant)}')) {
+    // Apply ${variant}-specific adjustments
+  }
+` : '';
+  return `import { createOptimizedPicture } from '../../scripts/aem.js';
+
+/**
+ * Detects whether a cell contains only media (picture / video link) with no text.
+ * @param {HTMLElement} cell
+ * @returns {boolean}
+ */
+function isMediaCell(cell) {
+  if (!cell.querySelector('picture') && !cell.querySelector('a[href*=".mp4"]')) return false;
+  return [...cell.children].every((child) => {
+    if (child.tagName === 'PICTURE') return true;
+    if (child.tagName !== 'P') return false;
+    return child.querySelector('picture') !== null || child.querySelector('a[href*=".mp4"]') !== null;
+  });
+}
+
+/**
+ * Detects split (two-column) vs full-width layout, adds .split class and
+ * labels img-wrapper / text-wrapper children accordingly.
+ * @param {HTMLElement} block
+ */
+function detectLayout(block) {
+  const row = block.firstElementChild;
+  if (!row) return;
+  const cells = [...row.children];
+  if (cells.length >= 2) {
+    block.classList.add('split');
+    cells.forEach((cell) => {
+      if (isMediaCell(cell)) {
+        cell.className = '${cls('img-wrapper')}';
+        const bgPicture = cell.querySelector('picture');
+        if (bgPicture) bgPicture.dataset.bg = '';
+      } else {
+        cell.className = '${cls('text-wrapper')}';
+      }
+    });
+    const imgIndex = cells.findIndex((c) => c.classList.contains('${cls('img-wrapper')}'));
+    block.classList.add(imgIndex === 0 ? 'left-text' : 'right-text');
+  } else {
+    const cell = row.firstElementChild;
+    if (!cell) return;
+    const [picture] = [...cell.querySelectorAll('picture')];
+    if (picture) picture.dataset.bg = '';
+  }
+}
+
+/**
+ * ${toTitleCase(blockName)} block — full-width or split hero with background media.
+ *
+ * Authoring table (single row):
+ * | ${toTitleCase(blockName)}             |
+ * | [bg image / video link] | Eyebrow / h1 / CTA |
+ *
+ * @param {HTMLElement} block
+ */
+export default function decorate(block) {
+  detectLayout(block);
+
+  // Optimise the background picture
+  const bgPicture = block.querySelector('picture[data-bg]');
+  if (bgPicture) {
+    const bgImg = bgPicture.querySelector('img');
+    const optimized = createOptimizedPicture(bgImg.src, bgImg.alt, false, [{ width: '2000' }]);
+    optimized.dataset.bg = '';
+    bgPicture.replaceWith(optimized);
+  }
+
+  // No h1 → treat as sub-hero
+  if (!block.querySelector('h1')) {
+    block.classList.add('sub');
+    const wrapper = block.closest('.${blockName}-wrapper');
+    if (wrapper) wrapper.classList.add('sub');
+  }
+
+  // Detect colour variant from block classes and apply tint
+  const colorOverride = [...block.classList].find(
+    (c) => getComputedStyle(document.documentElement).getPropertyValue(\`--color-\${c}\`).trim(),
+  );
+  if (colorOverride) {
+    block.style.setProperty('--image-color', \`var(--color-\${colorOverride})\`);
+    block.classList.add('image-tint');
+  }
+${variantBlock}}
+`;
+}
+
+function generateCardsJS(blockName: string, opts: { naming: 'bem' | 'flat'; variant?: string }): string {
+  const { naming, variant } = opts;
+  const cls = (part: string) => naming === 'bem' ? `${blockName}__${part}` : `${blockName}-${part}`;
+  const variantBlock = variant
+    ? `
+  // Variant: ${variant}
+  if (variants.includes('${variant}')) {
+    // Apply ${variant}-specific logic
+  }
+` : '';
+  return `import { createOptimizedPicture } from '../../scripts/aem.js';
+
+/**
+ * Returns the largest even factor of n (2–4), used to set cards-per-row.
+ * @param {number} n
+ * @returns {number}
+ */
+function getLargestFactor(n) {
+  const factor = [4, 3, 2].find((f) => n % f === 0);
+  if (factor) return factor;
+  return n > 4 ? (n % 2 === 0 ? 4 : 3) : 1;
+}
+
+/**
+ * Makes every card in the list clickable if it contains exactly one unique link.
+ * @param {HTMLElement} ul
+ */
+function enableClick(ul) {
+  ul.querySelectorAll('li').forEach((card) => {
+    const links = card.querySelectorAll('a[href]');
+    if (!links.length) return;
+    const sameLink = links.length === 1 || [...links].every((a) => a.href === links[0].href);
+    if (sameLink) {
+      card.classList.add('card-click');
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('a[href]')) return;
+        links[0].click();
+      });
+    }
+  });
+}
+
+/**
+ * ${toTitleCase(blockName)} block — transforms authored table rows into a \`<ul>\` card grid.
+ *
+ * Authoring table:
+ * | ${toTitleCase(blockName)} |              |
+ * | [image]   | ## Title\\n\\nBody text\\n[CTA] |
+ *
+ * Variants (add to block header): articles, grid, knockout, linked
+ *
+ * @param {HTMLElement} block
+ */
+export default function decorate(block) {
+  const variants = [...block.classList].filter((c) => c !== 'block' && c !== '${blockName}');
+
+  const ul = document.createElement('ul');
+
+  // Set cards-per-row from a \`rows-N\` class or auto-detect from item count
+  const definedRows = [...block.classList].find((c) => c.startsWith('rows-'));
+  if (!definedRows) {
+    ul.classList.add(\`rows-\${getLargestFactor(block.children.length)}\`);
+  } else {
+    ul.classList.add(definedRows);
+    block.classList.remove(definedRows);
+  }
+
+  [...block.children].forEach((row) => {
+    const li = document.createElement('li');
+    while (row.firstElementChild) li.append(row.firstElementChild);
+
+    // Optimize images
+    li.querySelectorAll('picture > img').forEach((img) =>
+      img.closest('picture').replaceWith(
+        createOptimizedPicture(img.src, img.alt, false, [{ width: '900' }]),
+      ),
+    );
+
+    // Classify cells: image-only → card-image, otherwise → card-body
+    [...li.children].forEach((child) => {
+      const hasOnlyPicture = child.children.length === 1 && child.querySelector('picture');
+      child.className = hasOnlyPicture ? '${cls('card-image')}' : '${cls('card-body')}';
+    });
+
+    ul.append(li);
+  });
+
+  if (variants.some((v) => ['linked', 'articles', 'knockout'].includes(v))) {
+    enableClick(ul);
+  }
+${variantBlock}
+  block.replaceChildren(ul);
+}
+`;
+}
+
+function generateAccordionJS(blockName: string, opts: { naming: 'bem' | 'flat' }): string {
+  const { naming } = opts;
+  const cls = (part: string) => naming === 'bem' ? `${blockName}__${part}` : `${blockName}-${part}`;
+  return `/**
+ * ${toTitleCase(blockName)} block — transforms table rows into \`<details>\`/\`<summary>\` accordion items.
+ *
+ * Authoring table:
+ * | ${toTitleCase(blockName)} |
+ * | Question / label |
+ * | Answer / body    |
+ * (repeat rows for each item — two cells per row: label + body)
+ *
+ * @param {HTMLElement} block
+ */
+export default function decorate(block) {
+  [...block.children].forEach((row) => {
+    const [labelCell, bodyCell] = [...row.children];
+
+    // Build <summary> from first cell
+    const summary = document.createElement('summary');
+    summary.className = '${cls('label')}';
+    summary.append(...labelCell.childNodes);
+
+    // Build body from second cell
+    const body = bodyCell || document.createElement('div');
+    body.className = '${cls('body')}';
+
+    // Wrap in <details>
+    const details = document.createElement('details');
+    details.className = '${cls('item')}';
+    details.append(summary, body);
+
+    row.replaceWith(details);
+  });
+
+  // Close other items when one opens (single-open mode)
+  block.addEventListener('toggle', (e) => {
+    if (!e.target.open) return;
+    block.querySelectorAll('details[open]').forEach((d) => {
+      if (d !== e.target) d.removeAttribute('open');
+    });
+  }, { capture: true });
+}
+`;
+}
+
+function generateCarouselJS(blockName: string, opts: { naming: 'bem' | 'flat'; variant?: string }): string {
+  const { naming, variant } = opts;
+  const cls = (part: string) => naming === 'bem' ? `${blockName}__${part}` : `${blockName}-${part}`;
+  const mod = (part: string) => naming === 'bem' ? `${blockName}--${part}` : part;
+  const variantBlock = variant
+    ? `
+  if (block.classList.contains('${mod(variant)}')) {
+    // Apply ${variant}-specific logic (e.g. different slide sizes)
+  }
+` : '';
+  return `import { createOptimizedPicture } from '../../scripts/aem.js';
+
+/**
+ * Advances the carousel to the next slide.
+ * @param {HTMLElement} track  — the \`<ul>\` containing \`<li>\` slides
+ */
+function nextSlide(track) {
+  const slides = [...track.children];
+  const current = slides.findIndex((s) => s.hasAttribute('data-active'));
+  const next = slides[(current + 1) % slides.length];
+  slides.forEach((s) => s.removeAttribute('data-active'));
+  next.setAttribute('data-active', '');
+  track.scrollTo({ left: next.offsetLeft, behavior: 'smooth' });
+}
+
+/**
+ * Builds prev/next arrow buttons and dot navigation.
+ * @param {HTMLElement} block
+ * @param {HTMLElement} track
+ */
+function buildNav(block, track) {
+  const slides = [...track.children];
+  if (slides.length <= 1) return;
+
+  // Dot indicators
+  const dots = document.createElement('div');
+  dots.className = '${cls('dots')}';
+  dots.setAttribute('role', 'radiogroup');
+  slides.forEach((_, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = '${cls('dot')}';
+    btn.setAttribute('aria-label', \`Slide \${i + 1}\`);
+    btn.setAttribute('aria-checked', i === 0 ? 'true' : 'false');
+    btn.addEventListener('click', () => {
+      slides.forEach((s) => s.removeAttribute('data-active'));
+      slides[i].setAttribute('data-active', '');
+      track.scrollTo({ left: slides[i].offsetLeft, behavior: 'smooth' });
+      dots.querySelectorAll('button').forEach((d, j) =>
+        d.setAttribute('aria-checked', j === i ? 'true' : 'false'),
+      );
+    });
+    dots.append(btn);
+  });
+
+  // Prev / Next arrows
+  const prev = document.createElement('button');
+  prev.type = 'button';
+  prev.className = '${cls('nav')} ${cls('nav')}--prev';
+  prev.setAttribute('aria-label', 'Previous slide');
+  prev.innerHTML = '&#8249;';
+  prev.addEventListener('click', () => {
+    const idx = [...track.children].findIndex((s) => s.hasAttribute('data-active'));
+    const newIdx = (idx - 1 + slides.length) % slides.length;
+    slides.forEach((s) => s.removeAttribute('data-active'));
+    slides[newIdx].setAttribute('data-active', '');
+    track.scrollTo({ left: slides[newIdx].offsetLeft, behavior: 'smooth' });
+    dots.querySelectorAll('button').forEach((d, j) =>
+      d.setAttribute('aria-checked', j === newIdx ? 'true' : 'false'),
+    );
+  });
+
+  const next = document.createElement('button');
+  next.type = 'button';
+  next.className = '${cls('nav')} ${cls('nav')}--next';
+  next.setAttribute('aria-label', 'Next slide');
+  next.innerHTML = '&#8250;';
+  next.addEventListener('click', () => nextSlide(track));
+
+  block.append(prev, next, dots);
+}
+
+/**
+ * ${toTitleCase(blockName)} block — horizontal scrolling carousel with nav dots and arrows.
+ *
+ * Authoring table (each row = one slide):
+ * | ${toTitleCase(blockName)}              |             |
+ * | [slide image]      | ## Title\\n\\nBody\\n[CTA] |
+ *
+ * @param {HTMLElement} block
+ */
+export default function decorate(block) {
+  const variants = [...block.classList].filter((c) => c !== 'block' && c !== '${blockName}');
+  const track = document.createElement('ul');
+  track.className = '${cls('track')}';
+
+  [...block.children].forEach((row, i) => {
+    const slide = document.createElement('li');
+    slide.className = '${cls('slide')}';
+    if (i === 0) slide.setAttribute('data-active', '');
+
+    [...row.children].forEach((cell) => {
+      const pic = cell.querySelector('picture');
+      if (pic && cell.textContent.trim() === '') {
+        cell.className = '${cls('media')}';
+        // Optimise slide image
+        const img = pic.querySelector('img');
+        if (img) {
+          pic.replaceWith(createOptimizedPicture(img.src, img.alt, i === 0, [
+            { media: '(min-width: 900px)', width: '1200' },
+            { width: '600' },
+          ]));
+        }
+      } else {
+        cell.className = '${cls('body')}';
+      }
+      slide.append(cell);
+    });
+
+    track.append(slide);
+  });
+
+  block.replaceChildren(track);
+  buildNav(block, track);
+${variantBlock}
+  // Auto-rotate (pause on hover)
+  let autoTimer = setInterval(() => nextSlide(track), 6000);
+  block.addEventListener('mouseenter', () => clearInterval(autoTimer));
+  block.addEventListener('mouseleave', () => {
+    clearInterval(autoTimer);
+    autoTimer = setInterval(() => nextSlide(track), 6000);
+  });
+}
+`;
+}
+
+function generateColumnsJS(blockName: string, opts: { naming: 'bem' | 'flat'; variant?: string }): string {
+  const { naming, variant } = opts;
+  const cls = (part: string) => naming === 'bem' ? `${blockName}__${part}` : `${blockName}-${part}`;
+  const variantBlock = variant
+    ? `
+  // Variant: ${variant}
+  if (variants.includes('${variant}')) {
+    block.classList.add('${variant}');
+  }
+` : '';
+  return `import { createOptimizedPicture } from '../../scripts/aem.js';
+
+/**
+ * ${toTitleCase(blockName)} block — side-by-side column layout, responsive stacking on mobile.
+ *
+ * Authoring table (each row = one set of columns):
+ * | ${toTitleCase(blockName)} |             |
+ * | [image]   | ## Title\\n\\nBody\\n[CTA] |
+ *
+ * @param {HTMLElement} block
+ */
+export default function decorate(block) {
+  const variants = [...block.classList].filter((c) => c !== 'block' && c !== '${blockName}');
+
+  [...block.children].forEach((row) => {
+    row.className = '${cls('row')}';
+    [...row.children].forEach((cell) => {
+      const pic = cell.querySelector('picture');
+      if (pic) {
+        cell.className = '${cls('media')}';
+        const img = pic.querySelector('img');
+        if (img) {
+          pic.replaceWith(
+            createOptimizedPicture(img.src, img.alt, false, [
+              { media: '(min-width: 900px)', width: '900' },
+              { width: '600' },
+            ]),
+          );
+        }
+      } else {
+        cell.className = '${cls('text')}';
+        // Promote single-link paragraphs to CTA buttons
+        cell.querySelectorAll('p > a').forEach((a) => {
+          if (a.parentElement.children.length === 1) {
+            a.classList.add('button');
+            a.parentElement.classList.add('button-container');
+          }
+        });
+      }
+    });
+  });
+${variantBlock}}
+`;
+}
+
+function generateTabsJS(blockName: string, opts: { naming: 'bem' | 'flat'; variant?: string }): string {
+  const { naming, variant } = opts;
+  const cls = (part: string) => naming === 'bem' ? `${blockName}__${part}` : `${blockName}-${part}`;
+  const variantBlock = variant
+    ? `
+  if (block.classList.contains('${variant}')) {
+    // ${variant} tab styling
+  }
+` : '';
+  return `/**
+ * ${toTitleCase(blockName)} block — tab navigation with panel switching.
+ *
+ * Authoring table (each row = one tab):
+ * | ${toTitleCase(blockName)} |             |
+ * | Tab label  | Panel content (richtext) |
+ *
+ * @param {HTMLElement} block
+ */
+export default function decorate(block) {
+  const tabList = document.createElement('div');
+  tabList.className = '${cls('list')}';
+  tabList.setAttribute('role', 'tablist');
+
+  const panels = document.createElement('div');
+  panels.className = '${cls('panels')}';
+
+  [...block.children].forEach((row, i) => {
+    const [labelCell, bodyCell] = [...row.children];
+
+    // Tab button
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = '${cls('tab')}';
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+    btn.setAttribute('aria-controls', \`${blockName}-panel-\${i}\`);
+    btn.id = \`${blockName}-tab-\${i}\`;
+    btn.append(...labelCell.childNodes);
+    tabList.append(btn);
+
+    // Tab panel
+    const panel = bodyCell || document.createElement('div');
+    panel.className = '${cls('panel')}';
+    panel.setAttribute('role', 'tabpanel');
+    panel.setAttribute('aria-labelledby', \`${blockName}-tab-\${i}\`);
+    panel.id = \`${blockName}-panel-\${i}\`;
+    if (i !== 0) panel.hidden = true;
+    panels.append(panel);
+  });
+
+  // Click handler — activate selected tab / panel
+  tabList.addEventListener('click', (e) => {
+    const tab = e.target.closest('[role="tab"]');
+    if (!tab) return;
+    tabList.querySelectorAll('[role="tab"]').forEach((t) => t.setAttribute('aria-selected', 'false'));
+    panels.querySelectorAll('[role="tabpanel"]').forEach((p) => { p.hidden = true; });
+    tab.setAttribute('aria-selected', 'true');
+    const panelId = tab.getAttribute('aria-controls');
+    panels.querySelector(\`#\${panelId}\`).hidden = false;
+  });
+${variantBlock}
+  block.replaceChildren(tabList, panels);
+}
+`;
+}
+
+function generateCustomJS(blockName: string, opts: {
   variant?: string;
   interactive?: boolean;
   hasMedia?: boolean;
+  naming: 'bem' | 'flat';
   description?: string;
 }): string {
-  const className = blockName;
-  const desc = options?.description || `${toTitleCase(blockName)} block`;
-
+  const { variant, interactive, hasMedia, naming, description } = opts;
+  const cls = (part: string) => naming === 'bem' ? `${blockName}__${part}` : `${blockName}-${part}`;
+  const desc = description || `${toTitleCase(blockName)} block`;
   return `/**
  * ${desc}
  * @param {HTMLElement} block - The block element
  */
 export default function decorate(block) {
-  // Extract rows and cells from authored content
-  const rows = [...block.children];
+  // Detect variants from block classes
+  const variants = [...block.classList].filter((c) => c !== 'block' && c !== '${blockName}');
 
-  rows.forEach((row) => {
+  [...block.children].forEach((row) => {
     const cells = [...row.children];
-${options?.hasMedia ? `
-    // Handle media (images/videos) in first cell
+${hasMedia ? `
+    // Cell 0: media (picture / video)
     const mediaCell = cells[0];
-    const picture = mediaCell?.querySelector('picture');
-    if (picture) {
-      mediaCell.className = '${className}-media';
+    if (mediaCell) {
+      mediaCell.className = '${cls('media')}';
+      const picture = mediaCell.querySelector('picture');
+      if (picture) picture.closest('p')?.replaceWith(picture);
     }
 
-    // Handle content in second cell
-    const contentCell = cells[1];
-    if (contentCell) {
-      contentCell.className = '${className}-content';
+    // Cell 1: text content
+    const textCell = cells[1];
+    if (textCell) {
+      textCell.className = '${cls('content')}';
+      textCell.querySelectorAll('p > a').forEach((a) => {
+        if (a.parentElement.children.length === 1) {
+          a.classList.add('button');
+          a.parentElement.classList.add('button-container');
+        }
+      });
     }
-` : `
-    cells.forEach((cell) => {
-      // Process each cell's content
-      const links = cell.querySelectorAll('a');
-      links.forEach((link) => {
-        // Style CTA links
-        if (link.closest('p')?.children.length === 1) {
-          link.className = 'button';
-          link.closest('p').className = 'button-container';
+` : `    cells.forEach((cell) => {
+      // Promote single-link paragraphs to CTA buttons
+      cell.querySelectorAll('p > a').forEach((a) => {
+        if (a.parentElement.children.length === 1) {
+          a.classList.add('button');
+          a.parentElement.classList.add('button-container');
         }
       });
     });
 `}  });
-${options?.interactive ? `
-  // Interactive behavior
+${interactive ? `
+  // Interactive behaviour
   block.addEventListener('click', (e) => {
-    const target = e.target.closest('[data-action]');
-    if (!target) return;
-    // Handle interaction
+    const trigger = e.target.closest('[data-action]');
+    if (!trigger) return;
+    // Handle interaction based on trigger.dataset.action
   });
-` : ''}${options?.variant ? `
-  // Variant-specific behavior
-  if (block.classList.contains('${options.variant}')) {
-    // Apply variant-specific logic
+` : ''}${variant ? `
+  if (variants.includes('${variant}')) {
+    // Apply ${variant}-specific logic
   }
 ` : ''}}
 `;
 }
 
-// ─── Block CSS Template ─────────────────────────────────────────
+// ─── Block JS Template (public entry) ──────────────────────────
 
-export function generateBlockCSS(blockName: string, options?: {
+export function generateBlockJS(blockName: string, options?: {
+  pattern?: BlockPattern;
   variant?: string;
+  interactive?: boolean;
   hasMedia?: boolean;
-  layout?: 'grid' | 'flex' | 'stack';
+  description?: string;
+  /** 'bem' = .block__element--modifier  /  'flat' = .block-element (default) */
+  naming?: 'bem' | 'flat';
 }): string {
-  const layout = options?.layout || 'stack';
+  const naming = options?.naming ?? 'flat';
+  const variant = options?.variant;
 
-  const layoutCSS = {
-    grid: `  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: var(--spacing-m, 1rem);`,
-    flex: `  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-m, 1rem);`,
-    stack: `  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-m, 1rem);`,
-  };
-
-  return `/* stylelint-disable no-descending-specificity */
-
-/* Block: ${blockName} */
-.${blockName} {
-${layoutCSS[layout]}
-  padding: var(--spacing-l, 2rem) 0;
+  switch (options?.pattern) {
+    case 'hero':      return generateHeroJS(blockName, { naming, variant });
+    case 'cards':     return generateCardsJS(blockName, { naming, variant });
+    case 'accordion': return generateAccordionJS(blockName, { naming });
+    case 'carousel':  return generateCarouselJS(blockName, { naming, variant });
+    case 'columns':   return generateColumnsJS(blockName, { naming, variant });
+    case 'tabs':      return generateTabsJS(blockName, { naming, variant });
+    default:          return generateCustomJS(blockName, {
+      variant,
+      interactive: options?.interactive,
+      hasMedia: options?.hasMedia || false,
+      naming,
+      description: options?.description,
+    });
+  }
 }
 
+// ─── Pattern-based CSS generators ──────────────────────────────
+
+function generateHeroCSS(blockName: string, opts: { variant?: string; naming: 'bem' | 'flat' }): string {
+  const { variant, naming } = opts;
+  const cls = (part: string) => naming === 'bem' ? `${blockName}__${part}` : `${blockName}-${part}`;
+  const mod = (part: string) => naming === 'bem' ? `${blockName}--${part}` : part;
+  return `/* =================================================================
+   Block: ${blockName}
+   Full-width hero with background image/video overlay.
+   Mobile-first breakpoints: 600px / 900px / 1200px
+   ================================================================= */
+
+.${blockName}-wrapper {
+  margin: 0;
+  padding: 0;
+}
+
+.${blockName},
 .${blockName} > div {
+  align-items: center;
   display: flex;
-  flex-direction: column;
-  gap: var(--spacing-s, 0.5rem);
-}
-
-.${blockName} > div > div {
-  flex: 1;
-}
-${options?.hasMedia ? `
-.${blockName}-media {
-  overflow: hidden;
-}
-
-.${blockName}-media picture {
-  display: block;
-}
-
-.${blockName}-media img {
-  display: block;
+  position: relative;
+  min-height: 500px;
   width: 100%;
-  height: auto;
+}
+
+.${blockName} {
+  overflow: hidden;
+  text-align: center;
+  z-index: 1;
+}
+
+/* Background media */
+.${blockName} picture[data-bg] img,
+.${blockName} video {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  height: 100%;
+  width: 100%;
   object-fit: cover;
 }
 
-.${blockName}-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-s, 0.5rem);
+/* Colour tint overlay */
+.${blockName}::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--image-color, transparent);
+  pointer-events: none;
+  opacity: 0.65;
 }
-` : ''}
-/* Button styling */
+
+/* Text region */
+.${blockName} > div > div {
+  margin: 0 auto;
+  max-width: 600px;
+  width: 100%;
+  padding: clamp(2rem, 6vw, 4rem) var(--horizontal-spacing, 1.5rem);
+  color: var(--color-gray-100, #f5f5f5);
+}
+
+.${blockName} h1 {
+  font-family: var(--heading-font-family, 'helvetica neue', helvetica, sans-serif);
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 700;
+  line-height: 1.1;
+  margin: 0 0 1rem;
+}
+
+.${blockName} p {
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  margin: 0.5rem 0;
+}
+
+/* CTA button */
 .${blockName} .button-container {
-  margin: 0;
+  margin-top: clamp(1rem, 3vw, 2rem);
+  display: flex;
+  justify-content: center;
 }
 
 .${blockName} .button {
   display: inline-block;
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--border-radius, 4px);
-  background-color: var(--link-color, #035fe6);
-  color: var(--background-color, #fff);
+  padding: 0.85rem 2rem;
+  background: var(--link-color, #035fe6);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
   text-decoration: none;
-  font-weight: 600;
-  transition: background-color 0.2s;
+  border-radius: var(--border-radius, 4px);
+  transition: background-color 0.2s, transform 0.1s;
 }
 
 .${blockName} .button:hover {
-  background-color: var(--link-hover-color, #024bb5);
+  background: var(--link-hover-color, #024bb5);
+  transform: translateY(-2px);
 }
-${options?.variant ? `
-/* Variant: ${options.variant} */
-.${blockName}.${options.variant} {
-  /* Variant-specific styles */
+
+/* ── Split variant ───────────────────────────────────────────── */
+.${blockName}.split,
+.${blockName}.split > div {
+  min-height: unset;
+}
+
+.${blockName}.split::after { content: none; }
+
+.${blockName}.split .${cls('img-wrapper')} {
+  position: relative;
+  min-height: 260px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.${blockName}.split .${cls('img-wrapper')} img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.${blockName}.split .${cls('text-wrapper')} {
+  padding: clamp(2rem, 5vw, 3rem) var(--horizontal-spacing, 1.5rem);
+  text-align: left;
+}
+
+.${blockName}.split .${cls('text-wrapper')} .button-container { justify-content: flex-start; }
+${variant ? `
+/* Variant: ${variant} */
+.${blockName}.${mod(variant)} {
+  /* variant-specific overrides */
 }
 ` : ''}
-/* Desktop */
-@media (min-width: 900px) {
-  .${blockName} > div {
+/* Sub-hero (no h1) */
+.${blockName}.sub,
+.${blockName}.sub > div {
+  min-height: 360px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (width >= 900px) {
+  .${blockName}.split,
+  .${blockName}.split > div {
+    min-height: 500px;
+  }
+
+  .${blockName}.split > div {
     flex-direction: row;
     align-items: center;
+  }
+
+  .${blockName}.split .${cls('img-wrapper')} {
+    position: absolute;
+    inset: 0;
+    min-height: unset;
+    width: unset;
+  }
+
+  .${blockName}.split .${cls('text-wrapper')} {
+    max-width: 50%;
+    position: relative;
+    z-index: 2;
+  }
+
+  .${blockName} > div > div {
+    max-width: 800px;
+  }
+}
+
+@media (width >= 1200px) {
+  .${blockName} > div > div {
+    max-width: 1000px;
   }
 }
 `;
 }
 
+function generateCardsCSS(blockName: string, opts: { variant?: string; naming: 'bem' | 'flat' }): string {
+  const { variant, naming } = opts;
+  const cls = (part: string) => naming === 'bem' ? `${blockName}__${part}` : `${blockName}-${part}`;
+  return `/* =================================================================
+   Block: ${blockName}
+   Responsive card grid — mobile stack → 2-col → N-col.
+   ================================================================= */
+
+.${blockName} ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1rem, 3vw, 1.5rem);
+}
+
+/* rows-N classes emitted by decorate() control column count */
+@media (width >= 600px) {
+  .${blockName} ul.rows-2,
+  .${blockName} ul.rows-4 { grid-template-columns: repeat(2, 1fr); }
+
+  .${blockName} ul.rows-3 { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (width >= 900px) {
+  .${blockName} ul.rows-4 { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Card item */
+.${blockName} li {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--border-radius, 8px);
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgb(0 0 0 / 8%);
+  background: var(--background-color, #fff);
+  transition: box-shadow 0.2s;
+}
+
+.${blockName} li:hover {
+  box-shadow: 0 4px 24px rgb(0 0 0 / 14%);
+}
+
+/* Card image */
+.${blockName} .${cls('card-image')} {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+
+.${blockName} .${cls('card-image')} picture {
+  display: block;
+  height: 100%;
+}
+
+.${blockName} .${cls('card-image')} img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.${blockName} li:hover .${cls('card-image')} img {
+  transform: scale(1.04);
+}
+
+/* Card body */
+.${blockName} .${cls('card-body')} {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  flex: 1;
+}
+
+.${blockName} .${cls('card-body')} h2,
+.${blockName} .${cls('card-body')} h3 {
+  font-family: var(--heading-font-family, 'helvetica neue', helvetica, sans-serif);
+  font-size: clamp(1.1rem, 2.5vw, 1.35rem);
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.${blockName} .${cls('card-body')} p {
+  margin: 0;
+  font-size: clamp(0.9rem, 1.5vw, 1rem);
+  color: var(--text-color-secondary, #555);
+  line-height: 1.5;
+  flex: 1;
+}
+
+/* CTA */
+.${blockName} .button-container { margin: auto 0 0; }
+
+.${blockName} .button {
+  display: inline-block;
+  padding: 0.6rem 1.25rem;
+  background: var(--link-color, #035fe6);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  border-radius: var(--border-radius, 4px);
+  transition: background-color 0.2s;
+}
+
+.${blockName} .button:hover { background: var(--link-hover-color, #024bb5); }
+
+/* Clickable card (single link) */
+.${blockName} li.card-click { cursor: pointer; }
+${variant ? `
+/* Variant: ${variant} */
+.${blockName}.${variant} li {
+  /* variant-specific card styles */
+}
+` : ''}`;
+}
+
+function generateAccordionCSS(blockName: string, opts: { naming: 'bem' | 'flat' }): string {
+  const { naming } = opts;
+  const cls = (part: string) => naming === 'bem' ? `${blockName}__${part}` : `${blockName}-${part}`;
+  return `/* =================================================================
+   Block: ${blockName}
+   Native <details>/<summary> accordion, mobile-first.
+   ================================================================= */
+
+.${blockName} details {
+  border-bottom: 1px solid var(--border-color, #e5e5e5);
+}
+
+.${blockName} details + details {
+  margin-top: 0.25rem;
+}
+
+.${blockName} details summary {
+  position: relative;
+  padding: 1rem 3rem 1rem 0;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+  font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+  line-height: 1.4;
+  transition: color 0.2s;
+  color: var(--text-color, #1a1a1a);
+}
+
+.${blockName} details summary::-webkit-details-marker { display: none; }
+
+/* Animated +/× icon */
+.${blockName} details summary::after {
+  content: '';
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  width: 1rem;
+  height: 1rem;
+  transform: translateY(-50%);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+  transition: transform 0.25s ease;
+}
+
+.${blockName} details[open] > summary::after {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.${blockName} details[open] > summary {
+  color: var(--link-color, #035fe6);
+}
+
+/* Body */
+.${blockName} .${cls('body')} {
+  padding: 0.75rem 0 1.25rem;
+  font-size: clamp(0.9rem, 1.5vw, 1rem);
+  line-height: 1.6;
+  color: var(--text-color-secondary, #444);
+}
+
+.${blockName} .${cls('body')} p { margin: 0 0 0.75rem; }
+.${blockName} .${cls('body')} p:last-child { margin: 0; }
+
+.${blockName} .${cls('body')} a {
+  color: var(--link-color, #035fe6);
+  text-decoration: underline;
+}
+
+@media (width >= 900px) {
+  .${blockName} details summary {
+    padding-top: 1.25rem;
+    padding-bottom: 1.25rem;
+  }
+}
+`;
+}
+
+function generateCarouselCSS(blockName: string, opts: { variant?: string; naming: 'bem' | 'flat' }): string {
+  const { variant, naming } = opts;
+  const cls = (part: string) => naming === 'bem' ? `${blockName}__${part}` : `${blockName}-${part}`;
+  return `/* =================================================================
+   Block: ${blockName}
+   Horizontal scrolling carousel with nav dots and arrows.
+   ================================================================= */
+
+.${blockName} {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Track */
+.${cls('track')} {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  /* hide scrollbar */
+  scrollbar-width: none;
+}
+
+.${cls('track')}::-webkit-scrollbar { display: none; }
+
+/* Slides */
+.${cls('slide')} {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+}
+
+.${cls('media')} {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+
+.${cls('media')} picture { display: block; height: 100%; }
+
+.${cls('media')} img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.${cls('body')} {
+  padding: clamp(1rem, 3vw, 2rem);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.${cls('body')} h2,
+.${cls('body')} h3 {
+  font-family: var(--heading-font-family, 'helvetica neue', helvetica, sans-serif);
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  font-weight: 700;
+  margin: 0;
+}
+
+.${cls('body')} p { margin: 0; line-height: 1.5; }
+
+/* CTA button */
+.${blockName} .button {
+  display: inline-block;
+  padding: 0.7rem 1.5rem;
+  background: var(--link-color, #035fe6);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: var(--border-radius, 4px);
+  transition: background 0.2s;
+  align-self: flex-start;
+}
+
+.${blockName} .button:hover { background: var(--link-hover-color, #024bb5); }
+
+/* Navigation arrows */
+.${cls('nav')} {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgb(255 255 255 / 85%);
+  border: none;
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+  transition: background 0.2s;
+}
+
+.${cls('nav')}:hover { background: #fff; }
+.${cls('nav')}--prev { left: 0.75rem; }
+.${cls('nav')}--next { right: 0.75rem; }
+
+/* Dot indicators */
+.${cls('dots')} {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
+}
+
+.${cls('dot')} {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--border-color, #ccc);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.${cls('dot')}[aria-checked="true"] {
+  background: var(--link-color, #035fe6);
+  transform: scale(1.3);
+}
+${variant ? `
+/* Variant: ${variant} */
+.${blockName}.${variant} .${cls('slide')} {
+  /* variant-specific slide styles */
+}
+` : ''}
+@media (width >= 900px) {
+  .${cls('slide')} {
+    flex-direction: row;
+  }
+
+  .${cls('media')} {
+    flex: 0 0 50%;
+    aspect-ratio: unset;
+  }
+
+  .${cls('body')} {
+    flex: 1;
+    justify-content: center;
+  }
+}
+`;
+}
+
+function generateColumnsCSS(blockName: string, opts: { variant?: string; naming: 'bem' | 'flat' }): string {
+  const { variant, naming } = opts;
+  const cls = (part: string) => naming === 'bem' ? `${blockName}__${part}` : `${blockName}-${part}`;
+  return `/* =================================================================
+   Block: ${blockName}
+   Side-by-side columns, stacks on mobile.
+   ================================================================= */
+
+.${blockName} {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2rem, 5vw, 4rem);
+}
+
+.${cls('row')} {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 3vw, 2rem);
+  align-items: flex-start;
+}
+
+/* Media cell */
+.${cls('media')} {
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--border-radius, 8px);
+}
+
+.${cls('media')} picture { display: block; }
+
+.${cls('media')} img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+/* Text cell */
+.${cls('text')} {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.${cls('text')} h2,
+.${cls('text')} h3 {
+  font-family: var(--heading-font-family, 'helvetica neue', helvetica, sans-serif);
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.${cls('text')} p {
+  font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+  line-height: 1.6;
+  margin: 0;
+  color: var(--text-color-secondary, #444);
+}
+
+/* CTA */
+.${blockName} .button {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background: var(--link-color, #035fe6);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: var(--border-radius, 4px);
+  transition: background-color 0.2s;
+}
+
+.${blockName} .button:hover { background: var(--link-hover-color, #024bb5); }
+${variant ? `
+/* Variant: ${variant} */
+.${blockName}.${variant} .${cls('row')} {
+  /* variant-specific styles */
+}
+` : ''}
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (width >= 600px) {
+  .${cls('media')} img { aspect-ratio: 16 / 9; }
+}
+
+@media (width >= 900px) {
+  .${cls('row')} {
+    flex-direction: row;
+    align-items: center;
+    gap: clamp(2rem, 5vw, 4rem);
+  }
+
+  /* Alternate image left/right on even rows */
+  .${cls('row')}:nth-child(even) { flex-direction: row-reverse; }
+
+  .${cls('media')},
+  .${cls('text')} {
+    flex: 1;
+  }
+}
+
+@media (width >= 1200px) {
+  .${blockName} {
+    gap: clamp(3rem, 6vw, 5rem);
+  }
+}
+`;
+}
+
+function generateTabsCSS(blockName: string, opts: { variant?: string; naming: 'bem' | 'flat' }): string {
+  const { variant, naming } = opts;
+  const cls = (part: string) => naming === 'bem' ? `${blockName}__${part}` : `${blockName}-${part}`;
+  return `/* =================================================================
+   Block: ${blockName}
+   Tab navigation with keyboard-accessible panel switching.
+   ================================================================= */
+
+.${cls('list')} {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border-bottom: 2px solid var(--border-color, #e5e5e5);
+  margin: 0 0 1.5rem;
+}
+
+.${cls('tab')} {
+  padding: 0.75rem 1.25rem;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  font-size: clamp(0.9rem, 1.5vw, 1rem);
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-color-secondary, #555);
+  transition: color 0.2s, border-color 0.2s;
+  line-height: 1;
+}
+
+.${cls('tab')}:hover {
+  color: var(--link-color, #035fe6);
+}
+
+.${cls('tab')}[aria-selected="true"] {
+  color: var(--link-color, #035fe6);
+  border-bottom-color: var(--link-color, #035fe6);
+}
+
+.${cls('tab')}:focus-visible {
+  outline: 2px solid var(--link-color, #035fe6);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Panels */
+.${cls('panels')} {
+  min-height: 200px;
+}
+
+.${cls('panel')} {
+  animation: ${blockName}-fade 0.2s ease;
+}
+
+@keyframes ${blockName}-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.${cls('panel')} > * { margin-top: 0; }
+${variant ? `
+/* Variant: ${variant} */
+.${blockName}.${variant} .${cls('tab')} {
+  /* variant-specific tab button styles */
+}
+` : ''}
+@media (width >= 600px) {
+  .${cls('tab')} {
+    padding: 0.85rem 1.5rem;
+    font-size: 1rem;
+  }
+}
+`;
+}
+
+function generateCustomCSS(blockName: string, opts: {
+  variant?: string;
+  hasMedia?: boolean;
+  layout?: 'grid' | 'flex' | 'stack';
+  naming: 'bem' | 'flat';
+}): string {
+  const { variant, hasMedia, layout = 'stack', naming } = opts;
+  const cls = (part: string) => naming === 'bem' ? `${blockName}__${part}` : `${blockName}-${part}`;
+
+  const layoutCSS = {
+    grid: `  display: grid;\n  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));\n  gap: clamp(1rem, 3vw, 1.5rem);`,
+    flex: `  display: flex;\n  flex-wrap: wrap;\n  gap: clamp(1rem, 3vw, 1.5rem);`,
+    stack: `  display: flex;\n  flex-direction: column;\n  gap: clamp(1rem, 3vw, 1.5rem);`,
+  };
+
+  return `/* =================================================================
+   Block: ${blockName}
+   Mobile-first. Breakpoints: 600px / 900px / 1200px
+   ================================================================= */
+
+.${blockName} {
+${layoutCSS[layout]}
+  padding: clamp(2rem, 5vw, 4rem) 0;
+}
+
+.${blockName} > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+${hasMedia ? `
+.${cls('media')} {
+  overflow: hidden;
+  border-radius: var(--border-radius, 8px);
+}
+
+.${cls('media')} picture { display: block; }
+
+.${cls('media')} img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.${cls('content')} {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+` : ''}
+.${blockName} h2,
+.${blockName} h3 {
+  font-family: var(--heading-font-family, 'helvetica neue', helvetica, sans-serif);
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.${blockName} p {
+  font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* CTA button */
+.${blockName} .button-container { margin: 0; }
+
+.${blockName} .button {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius, 4px);
+  background: var(--link-color, #035fe6);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.${blockName} .button:hover { background: var(--link-hover-color, #024bb5); }
+${variant ? `
+/* Variant: ${variant} */
+.${blockName}.${variant} {
+  /* variant-specific overrides */
+}
+` : ''}
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (width >= 600px) {
+  .${blockName} > div {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+@media (width >= 900px) {
+  .${blockName} > div {
+    align-items: center;
+    gap: clamp(2rem, 5vw, 4rem);
+  }
+}
+
+@media (width >= 1200px) {
+  .${blockName} {
+    padding: clamp(3rem, 6vw, 5rem) 0;
+  }
+}
+`;
+}
+
+// ─── Block CSS Template (public entry) ──────────────────────────
+
+export function generateBlockCSS(blockName: string, options?: {
+  pattern?: BlockPattern;
+  variant?: string;
+  hasMedia?: boolean;
+  layout?: 'grid' | 'flex' | 'stack';
+  /** 'bem' = .block__element--modifier  /  'flat' = .block-element (default) */
+  naming?: 'bem' | 'flat';
+}): string {
+  const naming = options?.naming ?? 'flat';
+  const variant = options?.variant;
+
+  switch (options?.pattern) {
+    case 'hero':      return generateHeroCSS(blockName, { variant, naming });
+    case 'cards':     return generateCardsCSS(blockName, { variant, naming });
+    case 'accordion': return generateAccordionCSS(blockName, { naming });
+    case 'carousel':  return generateCarouselCSS(blockName, { variant, naming });
+    case 'columns':   return generateColumnsCSS(blockName, { variant, naming });
+    case 'tabs':      return generateTabsCSS(blockName, { variant, naming });
+    default:          return generateCustomCSS(blockName, {
+      variant,
+      hasMedia: options?.hasMedia,
+      layout: options?.layout,
+      naming,
+    });
+  }
+}
+
 // ─── Component Model JSON ───────────────────────────────────────
 
-type ModelField = {
+export type ModelField = {
   name: string;
   type: string;
   label: string;
   required?: boolean;
   multi?: boolean;
+  /**
+   * When true the `name` is treated as a raw CSS-selector DOM path
+   * (e.g. "div:nth-child(1)>picture:nth-child(1)>img:nth-child(3)[src]")
+   * used by the xwalk / Universal Editor to bind directly to a DOM node.
+   * The valueType will be forced to "string".
+   */
+  domPath?: boolean;
+  /** Default value shown in UE property panel. */
+  defaultValue?: string;
 };
+
+/** Pattern → default variant options emitted in the `classes` multiselect. */
+const PATTERN_VARIANT_OPTIONS: Record<BlockPattern, Array<{ name: string; value: string }>> = {
+  hero:      [{ name: 'Split',  value: 'split'  }, { name: 'Dark',   value: 'dark'   }, { name: 'Sub',    value: 'sub'    }],
+  cards:     [{ name: 'Grid',   value: 'grid'   }, { name: 'Articles', value: 'articles' }, { name: 'Knockout', value: 'knockout' }],
+  accordion: [{ name: 'Footer', value: 'footer' }],
+  carousel:  [{ name: 'Videos', value: 'videos' }, { name: 'Testimonial', value: 'testimonial' }],
+  columns:   [{ name: 'Reversed', value: 'reversed' }, { name: 'Dark', value: 'dark' }],
+  tabs:      [{ name: 'Underline', value: 'underline' }, { name: 'Pill', value: 'pill' }],
+  custom:    [{ name: 'Dark', value: 'dark' }, { name: 'Wide', value: 'wide' }],
+};
+
+/**
+ * Builds the standard `classes` multiselect field every block should have.
+ * Merges pattern defaults with any caller-supplied extra options.
+ */
+function buildClassesField(
+  pattern: BlockPattern = 'custom',
+  extraVariants?: Array<{ name: string; value: string }>,
+): Record<string, unknown> {
+  const options = [
+    ...PATTERN_VARIANT_OPTIONS[pattern],
+    ...(extraVariants ?? []),
+  ];
+  return {
+    component: 'multiselect',
+    name: 'classes',
+    label: 'Variants',
+    options,
+  };
+}
 
 function fieldToModelEntry(f: ModelField): Record<string, unknown> {
   const entry: Record<string, unknown> = {
     component: normalizeType(f.type),
-    valueType: getValueType(f.type),
+    // domPath fields always serialize as plain strings; skip redundant valueType
+    ...(f.domPath ? {} : { valueType: getValueType(f.type) }),
     name: f.name,
     label: f.label,
   };
   if (f.required) entry.required = true;
   if (f.multi !== undefined) entry.multi = f.multi;
+  if (f.defaultValue !== undefined) entry.value = f.defaultValue;
   return entry;
 }
 
 /**
  * Generate a single entry for component-models.json.
- * Returns a JSON string of `{ id, fields: [...] }` ready to be appended
- * to the top-level array in the file.
+ *
+ * Automatically prepends `image`+`imageAlt` for reference fields and
+ * appends a `classes` multiselect (variants) unless the caller already
+ * included one.  This mirrors real-world production repos (vitamix, ingredion).
+ *
+ * @param blockName  - Block id (kebab-case)
+ * @param fields     - Caller-supplied fields (without `classes`)
+ * @param options
+ *   - pattern        - Block archetype; drives default variant options in `classes`
+ *   - extraVariants  - Extra variant options merged into `classes`
+ *   - omitClasses    - Set true to suppress the auto-appended `classes` field
  */
 export function generateComponentModel(
   blockName: string,
   fields: Array<ModelField>,
+  options?: {
+    pattern?: BlockPattern;
+    extraVariants?: Array<{ name: string; value: string }>;
+    /** Suppress the auto-appended `classes` multiselect. */
+    omitClasses?: boolean;
+  },
 ): string {
-  const model = {
-    id: blockName,
-    fields: fields.map(fieldToModelEntry),
-  };
+  const hasClasses = fields.some((f) => f.name === 'classes');
+  const allFields: Array<Record<string, unknown>> = fields.map(fieldToModelEntry);
+  if (!hasClasses && !options?.omitClasses) {
+    allFields.push(buildClassesField(options?.pattern, options?.extraVariants));
+  }
+  const model = { id: blockName, fields: allFields };
   return JSON.stringify(model, null, 2);
 }
 
@@ -213,17 +1581,22 @@ type DefinitionOptions = {
   filter?: string;
   /** If true, emit an item definition (resourceType .../block/v1/block/item). */
   isItem?: boolean;
+  /**
+   * DA editor hints — how many rows/columns the block table starts with.
+   * Emit `plugins.da` if provided.
+   */
+  daRows?: number;
+  daColumns?: number;
 };
 
 /**
  * Generate a single component entry for component-definition.json.
  *
+ * Emits both `plugins.xwalk` (Universal Editor) and `plugins.da`
+ * (Document Authoring) when row/column hints are provided.
+ *
  * The canonical file shape is:
  *   { "groups": [ { "title": "Blocks", "id": "blocks", "components": [ ... ] } ] }
- *
- * This generator returns the inner component object ready to append to
- * `groups[i].components`. Consumers should merge it into the existing
- * group (default: "Blocks").
  */
 export function generateComponentDefinition(
   blockName: string,
@@ -244,17 +1617,23 @@ export function generateComponentDefinition(
   if (model) template.model = model;
   if (opts.filter) template.filter = opts.filter;
 
+  const plugins: Record<string, unknown> = {
+    xwalk: { page: { resourceType, template } },
+  };
+
+  // DA editor hints (row/column count for initial table scaffold)
+  if (opts.daRows !== undefined || opts.daColumns !== undefined) {
+    plugins.da = {
+      name: title.toLowerCase().replace(/\s+/g, '-'),
+      ...(opts.daRows !== undefined    ? { rows: opts.daRows }       : {}),
+      ...(opts.daColumns !== undefined ? { columns: opts.daColumns } : {}),
+    };
+  }
+
   const component: Record<string, unknown> = {
     title,
     id: blockName,
-    plugins: {
-      xwalk: {
-        page: {
-          resourceType,
-          template,
-        },
-      },
-    },
+    plugins,
   };
 
   return JSON.stringify(component, null, 2);
@@ -264,7 +1643,7 @@ export function generateComponentDefinition(
 
 /**
  * Generate an entry for component-filters.json.
- * The filter `id` equals the block id (UE convention) \u2014 NOT `<block>-filter`.
+ * The filter `id` equals the block id (UE convention) — NOT `<block>-filter`.
  */
 export function generateComponentFilter(
   blockName: string,
@@ -285,12 +1664,13 @@ export function generateComponentFilter(
  * Generate the **single** block-scoped UE config file at
  * `blocks/<blockName>/_<blockName>.json`.
  *
- * This is the canonical file shape used by aem-boilerplate-xwalk: each
- * block ships ONE JSON file that bundles its `definitions`, `models`, and
- * `filters` together. The project build aggregates every block's
- * `_<name>.json` into the project-root `component-definitions.json`,
- * `component-models.json`, and `component-filters.json` — authors never
- * edit those root files by hand.
+ * Each block ships ONE JSON file bundling `definitions`, `models`, and
+ * `filters`.  The project build aggregates these into the project-root
+ * `component-definitions.json` / `component-models.json` /
+ * `component-filters.json` — authors never edit those root files by hand.
+ *
+ * Enhancement: auto-injects `classes` multiselect (variants) and `da`
+ * plugin hints derived from the block pattern.
  */
 export function generateBlockJsonFile(
   blockName: string,
@@ -298,36 +1678,68 @@ export function generateBlockJsonFile(
   options?: {
     title?: string;
     group?: string;
+    pattern?: BlockPattern;
     items?: Array<{ id: string; title?: string; fields: Array<ModelField> }>;
     allowedChildren?: string[];
+    extraVariants?: Array<{ name: string; value: string }>;
+    /** DA editor row/column hints (default: 1 row, 2 columns for leaf blocks) */
+    daRows?: number;
+    daColumns?: number;
   },
 ): string {
   const items = options?.items ?? [];
   const isContainer = items.length > 0;
+  const pattern = options?.pattern;
+
+  // Default DA hints derived from pattern
+  const defaultDaRows = (() => {
+    switch (pattern) {
+      case 'hero': return 1;
+      case 'accordion': return 3;
+      case 'carousel': return 3;
+      default: return 1;
+    }
+  })();
+  const defaultDaCols = (() => {
+    switch (pattern) {
+      case 'accordion': return 2;
+      case 'columns': return 2;
+      case 'cards': return 2;
+      default: return isContainer ? 0 : 2;
+    }
+  })();
+
+  const daRows    = options?.daRows    ?? defaultDaRows;
+  const daColumns = options?.daColumns ?? defaultDaCols;
 
   const definitions: Array<Record<string, unknown>> = [
     JSON.parse(generateComponentDefinition(blockName, {
-      title: options?.title,
-      group: options?.group,
-      model: fields.length > 0 ? blockName : null,
-      filter: isContainer ? blockName : undefined,
+      title:     options?.title,
+      group:     options?.group,
+      model:     fields.length > 0 ? blockName : null,
+      filter:    isContainer ? blockName : undefined,
+      daRows,
+      daColumns,
     })),
   ];
   for (const item of items) {
     definitions.push(JSON.parse(generateComponentDefinition(item.id, {
-      title: item.title,
-      group: options?.group,
-      model: item.id,
+      title:  item.title,
+      group:  options?.group,
+      model:  item.id,
       isItem: true,
     })));
   }
 
   const models: Array<Record<string, unknown>> = [];
   if (fields.length > 0) {
-    models.push(JSON.parse(generateComponentModel(blockName, fields)));
+    models.push(JSON.parse(generateComponentModel(blockName, fields, {
+      pattern,
+      extraVariants: options?.extraVariants,
+    })));
   }
   for (const item of items) {
-    models.push(JSON.parse(generateComponentModel(item.id, item.fields)));
+    models.push(JSON.parse(generateComponentModel(item.id, item.fields, { omitClasses: true })));
   }
 
   const filters: Array<Record<string, unknown>> = [];

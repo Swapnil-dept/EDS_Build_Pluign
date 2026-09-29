@@ -38,21 +38,13 @@ import { registerEdsPageImport } from './tools/eds-page-import.js';
 import { registerComponentInterview } from './tools/component-interview.js';
 import { registerClarifyTask } from './tools/clarify-task.js';
 import { registerBootstrapWorkspace } from './tools/bootstrap-workspace.js';
+import { registerScaffoldMigrationPlan } from './tools/scaffold-migration-plan.js';
+import { registerGenerateProjectMd } from './tools/generate-project-md.js';
+import { registerEdsMultibrandTheming } from './tools/eds-multibrand-theming.js';
+import { registerEdsVerificationGuide } from './tools/eds-verification-guide.js';
 
 // Tools — Project routing (smart detection)
 import { registerDetectProjectType } from './tools/detect-project-type.js';
-
-// Tools — Storefront (Adobe Commerce drop-ins)
-import { registerScaffoldStorefrontProject } from './tools/scaffold-storefront-project.js';
-import { registerAddDropin } from './tools/add-dropin.js';
-import { registerLookupDropin } from './tools/lookup-dropin.js';
-import { registerCustomizeDropinSlot } from './tools/customize-dropin-slot.js';
-import { registerStyleDropin } from './tools/style-dropin.js';
-import { registerScaffoldCommerceBlock } from './tools/scaffold-commerce-block.js';
-import { registerValidateStorefront } from './tools/validate-storefront.js';
-import { registerEdsStorefrontConfig } from './tools/eds-storefront-config.js';
-import { registerCommerceEventsGuide } from './tools/commerce-events-guide.js';
-import { registerCommerceSkillsSetup } from './tools/commerce-skills-setup.js';
 
 // Tools — AEM as a Cloud Service (Java / Maven stack)
 import { registerAemSkillsIndex } from './tools/aem-skills-index.js';
@@ -101,26 +93,18 @@ registerEdsPageImport(server);    // eds_page_import_skills_index, eds_block_htm
 registerComponentInterview(server); // component_interview — question set + JSON template per project type
 registerClarifyTask(server);      // clarify_task — logical questions per intent (must-ask before scaffolding)
 registerBootstrapWorkspace(server); // bootstrap_workspace_instructions — emit copilot/cursor/agents files for the user's repo
+registerScaffoldMigrationPlan(server); // scaffold_migration_plan — section-by-section build plan for .migration/plans/
+registerGenerateProjectMd(server); // generate_project_md — durable PROJECT.md project map
+registerEdsMultibrandTheming(server); // eds_multibrand_theming_guide — body-class brand scoping guidance
+registerEdsVerificationGuide(server); // eds_visual_verification_guide — DOM/computed-style/pixel-diff verification guidance
 
 // Tools: Project & Configuration
 registerScaffoldProject(server);  // scaffold_project — new project setup guide
 registerEdsConfig(server);        // eds_config — configuration file templates
 registerEdsScripts(server);       // eds_scripts_guide — scripts.js customization
 
-// Tools: Project routing — call FIRST to decide EDS vs storefront
+// Tools: Project routing — call FIRST to decide EDS vs AEM
 registerDetectProjectType(server);         // detect_project_type
-
-// Tools: Storefront (Adobe Commerce drop-ins)
-registerScaffoldStorefrontProject(server); // scaffold_storefront_project
-registerAddDropin(server);                 // add_dropin
-registerLookupDropin(server);              // lookup_dropin
-registerCustomizeDropinSlot(server);       // customize_dropin_slot
-registerStyleDropin(server);               // style_dropin
-registerScaffoldCommerceBlock(server);     // scaffold_commerce_block
-registerValidateStorefront(server);        // validate_storefront
-registerEdsStorefrontConfig(server);       // eds_storefront_config
-registerCommerceEventsGuide(server);       // commerce_events_guide
-registerCommerceSkillsSetup(server);       // commerce_skills_setup
 
 // Tools: AEM as a Cloud Service (Java / Maven stack)
 registerAemSkillsIndex(server);            // aem_skills_index
@@ -170,12 +154,10 @@ async function main() {
   console.error('          component_interview,');
   console.error('          clarify_task,');
   console.error('          bootstrap_workspace_instructions,');
+  console.error('          scaffold_migration_plan, generate_project_md,');
+  console.error('          eds_multibrand_theming_guide, eds_visual_verification_guide,');
   console.error('          scaffold_project, eds_config, eds_scripts_guide');
-  console.error('   Routing: detect_project_type (call first to decide EDS vs storefront)');
-  console.error('   Storefront tools: scaffold_storefront_project, add_dropin, lookup_dropin,');
-  console.error('                     customize_dropin_slot, style_dropin, scaffold_commerce_block,');
-  console.error('                     validate_storefront, eds_storefront_config, commerce_events_guide,');
-  console.error('                     commerce_skills_setup');
+  console.error('   Routing: detect_project_type (call first to decide EDS vs AEM)');
   console.error('   AEMaaCS tools: aem_skills_index, ensure_agents_md, scaffold_aem_component,');
   console.error('                  aem_best_practices, aem_dialog_design, aem_security_pipeline,');
   console.error('                  aem_migration_pattern, aem_dispatcher_config');
@@ -183,10 +165,8 @@ async function main() {
   console.error('                            scaffold_aem65_component, aem_dispatcher_config (variant=ams),');
   console.error('                            ensure_agents_md (variant=6.5-lts)');
   console.error('   Resources: eds-coding-standards, eds-block-guide, eds-cheatsheet, eds-adobe-skills,');
-  console.error('              eds-storefront-architecture, eds-storefront-dropins, eds-storefront-sdk,');
   console.error('              aemaacs-skills, aemaacs-architecture');
   console.error('   Prompts: new-block, fix-block, design-to-block,');
-  console.error('            new-storefront-project, add-and-customize-dropin, storefront-from-design,');
   console.error('            new-aem-component, migrate-to-cloud-service, aem-dispatcher-task,');
   console.error('            new-aem65-component, aem65-replication-task, aem65-workflow-task,');
   console.error('            figma-to-component, image-to-component, url-to-component,');
