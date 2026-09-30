@@ -3,18 +3,18 @@
  *
  * Given snapshots of a workspace (package.json, dir listings, key files),
  * decide whether it is:
- *   - vanilla EDS (aem.live, no commerce dropins)
- *   - EDS Commerce Storefront (@dropins/* + scripts/__dropins__/)
+ *   - vanilla EDS (aem.live)
  *   - AEM as a Cloud Service (Maven/Java with core, ui.apps, dispatcher)
+ *   - AEM 6.5 LTS / AMS (Maven/Java with legacy AEM APIs)
  *
  * Returns a confidence-scored verdict plus the list of signals used and the
  * recommended next tools to call.
  */
 
-export type ProjectType = 'eds' | 'storefront' | 'aemaacs' | 'aem65lts' | 'unknown';
+export type ProjectType = 'eds' | 'aemaacs' | 'aem65lts' | 'unknown';
 
 export interface DetectionInput {
-  // EDS / Storefront inputs
+  // EDS inputs
   packageJson?: string;
   headHtml?: string;
   configJson?: string;
@@ -41,7 +41,7 @@ export interface DetectionSignal {
 export interface DetectionResult {
   type: ProjectType;
   confidence: 'low' | 'medium' | 'high';
-  score: number;                     // commerce-vs-eds (storefront positive, eds negative)
+  score: number;                     // EDS heuristic score (negative favors EDS)
   aemScore: number;                  // AEMaaCS positive-only
   aem65Score: number;                // AEM 6.5 LTS positive-only
   signals: DetectionSignal[];
@@ -281,24 +281,21 @@ export function detectProjectType(input: DetectionInput): DetectionResult {
   let type: ProjectType;
   let confidence: 'low' | 'medium' | 'high';
 
-  const isStorefrontStrong = score >= 25;
+  const storefrontDetected = score >= 10;
   // Maven project: pick the AEM variant with the higher *exclusive* signal.
   // Cloud-service-only signals: aem-sdk-api, .aem-skills-config.yaml, archetype.
   // 6.5-LTS-only signals: uber-jar, cq.quickstart.version, cq-quickstart.
   const aemMaxScore = Math.max(aemScore, aem65Score);
   const winsAemaacs = aemScore >= aem65Score;
-  if (aemMaxScore >= 40 && !isStorefrontStrong) {
+  if (aemMaxScore >= 40 && !storefrontDetected) {
     type = winsAemaacs ? 'aemaacs' : 'aem65lts';
     confidence = aemMaxScore >= 70 ? 'high' : 'medium';
-  } else if (aemMaxScore >= 20 && !isStorefrontStrong) {
+  } else if (aemMaxScore >= 20 && !storefrontDetected) {
     type = winsAemaacs ? 'aemaacs' : 'aem65lts';
     confidence = 'low';
-  } else if (score >= 25) {
-    type = 'storefront';
-    confidence = score >= 60 ? 'high' : 'medium';
-  } else if (score >= 10) {
-    type = 'storefront';
-    confidence = 'low';
+  } else if (storefrontDetected) {
+    type = 'unknown';
+    confidence = score >= 25 ? 'medium' : 'low';
   } else if (score <= -5) {
     type = 'eds';
     confidence = 'high';
@@ -321,6 +318,9 @@ export function detectProjectType(input: DetectionInput): DetectionResult {
   }
   if (hasDropinsDir && !installedDropins.length && pkg) {
     warnings.push('scripts/__dropins__/ contains dropins but package.json has no @dropins/storefront-* dependencies (postinstall artifact left over?).');
+  }
+  if (storefrontDetected) {
+    warnings.push('Adobe Commerce Storefront support has been removed from this server. Storefront-like signals were detected, but no storefront tools are available.');
   }
   if (type === 'aemaacs' && !hasAemSkillsConfig) {
     warnings.push('No `.aem-skills-config.yaml` (or `configured: true`) at the project root. Create it before scaffolding components.');
@@ -350,18 +350,6 @@ export function detectProjectType(input: DetectionInput): DetectionResult {
       'aem65_workflow',
       'aem_dispatcher_config',
     );
-  } else if (type === 'storefront') {
-    recommendedTools.push(
-      'project_summary',
-      'lookup_dropin',
-      'add_dropin',
-      'scaffold_commerce_block',
-      'customize_dropin_slot',
-      'style_dropin',
-      'eds_storefront_config',
-      'commerce_events_guide',
-      'validate_storefront',
-    );
   } else if (type === 'eds') {
     recommendedTools.push(
       'project_summary',
@@ -375,7 +363,7 @@ export function detectProjectType(input: DetectionInput): DetectionResult {
       'eds_scripts_guide',
     );
   } else {
-    recommendedTools.push('project_summary', 'scaffold_project', 'scaffold_storefront_project');
+    recommendedTools.push('project_summary', 'scaffold_project');
   }
 
   return {
@@ -401,7 +389,7 @@ To detect project type, gather these inputs from the user's workspace and
 pass them to \`detect_project_type\`. None of them are required individually —
 pass whatever you have. The more inputs, the higher the detection confidence.
 
-EDS / Storefront inputs:
+EDS inputs:
   packageJson         ← contents of \`package.json\`
   rootDirListing      ← \`ls\` of the project root (one name per line)
   scriptsDirListing   ← \`ls scripts/\`

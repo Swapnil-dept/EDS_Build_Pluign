@@ -20,8 +20,6 @@ import { KARPATHY_GUIDELINES } from '../knowledge/karpathy-guidelines.js';
 type Intent =
   | 'new-block'
   | 'new-component'
-  | 'new-storefront-block'
-  | 'add-dropin'
   | 'style-or-theme'
   | 'fix-bug'
   | 'migrate-page'
@@ -29,6 +27,7 @@ type Intent =
   | 'refactor'
   | 'performance'
   | 'configure-project'
+  | 'warm-up'
   | 'unknown';
 
 interface QuestionSet {
@@ -42,29 +41,37 @@ interface QuestionSet {
 
 const QUESTION_SETS: Record<Intent, QuestionSet> = {
   'new-block': {
-    summary: 'User wants a new EDS block (Universal Editor authored).',
+    summary: 'User wants a new EDS block (Universal Editor or document authored).',
     preflight: [
-      'Call `detect_project_type` and confirm the result is `eds`. If it is `storefront`, switch intent to `new-storefront-block`. If it is `aemaacs` or `aem65lts`, switch to `new-component`.',
-      'Call `lookup_block` with the user-described purpose to see if a block already exists in this project.',
+      'Call `detect_project_type` and confirm the result is `eds`. If it is `aemaacs` or `aem65lts`, switch to `new-component`.',
+      '**VARIANT CHECK (do this before any other question):** Call `lookup_block` with the block name / purpose. Also scan the `blocks/` directory for existing block folders. Then ask the user: _"Could this be achieved as a CSS class variant of an existing block?"_ If YES → call `scaffold_block(variantOf: "<parent>")` to emit a CSS-only override (no new JS or JSON file needed). If NO → proceed and pass `confirmedNewBlock: true` to `scaffold_block`.',
       'Call `search_block_collection` with the user-described purpose to see if Adobe Block Collection / Block Party already ships one.',
-      'Run `component_interview` with `projectType: "eds"` for the canonical question set, then ask the user one question per turn.',
+      'If the user provides a Figma URL, screenshot, or image → use `generate_block_from_design` (NOT `scaffold_block`). The design tool includes a vision-analysis prompt + pattern classifier + pixel-perfect scaffold.',
+      'Run `component_interview` with `projectType: "eds"` for the full question set, then ask the user one question per turn.',
     ],
     required: [
-      { id: 'blockName',  question: 'Block name in kebab-case (e.g. `hero`, `promo-card`)?' },
-      { id: 'purpose',    question: 'What does it do, in one sentence?' },
-      { id: 'fields',     question: 'Which authoring fields? List name (camelCase) + label + type (text / textarea / richtext / reference / aem-content / select / multiselect / boolean / number).' },
+      { id: 'variantCheck', question: 'Could this be a CSS variant of an existing block? (run `lookup_block` + scan `blocks/` first)', hint: 'If YES → use variantOf param in scaffold_block. If NO → set confirmedNewBlock: true. This must be answered before asking anything else.' },
+      { id: 'blockName',    question: 'Block name in kebab-case (e.g. `hero`, `promo-card`)?' },
+      { id: 'purpose',      question: 'What does this block do? One sentence — used in README and code comments.' },
+      { id: 'pattern',      question: 'Which pattern best describes this block?', hint: 'hero (full-width media+text) / cards (repeating grid) / accordion (expand/collapse) / carousel (scrolling slides) / columns (side-by-side) / tabs (switchable panels) / custom (unique layout). This drives the JS+CSS archetype.' },
+      { id: 'fields',       question: 'Which authoring fields are needed? For each: name (camelCase) + label + type.', hint: 'Types: text / textarea / richtext / reference (image) / aem-content (link) / select / multiselect / boolean / number. Example: title (text), body (richtext), image (reference), cta (aem-content).' },
     ],
     optional: [
-      { id: 'variants',   question: 'Any visual variants you want as CSS class modifiers? (Common: dark, light, wide, centered, compact, reversed.)' },
-      { id: 'layout',     question: 'CSS layout: grid, flex, or stack?' },
+      { id: 'design',     question: 'Do you have a design file? Figma URL, screenshot, or image path?', hint: 'If yes, use `generate_block_from_design` — it runs vision analysis and produces a pixel-perfect scaffold matched to the design.' },
+      { id: 'modelType',  question: 'Which of Adobe’s 4 canonical content model types does this use?', hint: 'standalone (single table, one unit — hero, banner) / collection (repeating rows — cards, carousel) / configuration (key-value config rows — blog listing, search) / auto-blocked (default content transformed by JS — YouTube embed, tabs from a list). Usually inferred from `pattern` — only needed when `pattern` is `custom` or ambiguous.' },
+      { id: 'variants',   question: 'Any visual variants as CSS class modifiers? (Common: dark, light, wide, centered, compact, reversed.)' },
+      { id: 'naming',     question: 'CSS class naming convention: flat (`.block-element`, default) or BEM (`.block__element--modifier`)?', hint: 'flat = Vitamix/Ingredion style. BEM = Volvo Trucks style.' },
+      { id: 'aboveFold',  question: 'Is this block above the fold (LCP-critical, first viewport)?', hint: 'If yes, it counts against the 100 KB pre-LCP budget. Images in the first slide/hero must use `loading="eager"` + `fetchpriority="high"`.' },
+      { id: 'container',  question: 'Is it a container with repeating items (e.g. cards → card)? If yes: child item id + its fields.', hint: 'Container blocks need a separate model + filter entry in `_block.json`.' },
       { id: 'hasMedia',   question: 'Does the block have an image / video column?' },
-      { id: 'interactive',question: 'Any JS event handlers (accordion / tabs / carousel / etc.)?' },
-      { id: 'container',  question: 'Is it a container with repeating items (cards → card)? If yes, what is the child item id and its fields?' },
+      { id: 'interactive',question: 'Any JS event handlers needed? (click, hover, IntersectionObserver, etc.)' },
+      { id: 'thirdParty', question: 'Any third-party library required? (e.g. map SDK, video player, chart lib)', hint: 'Load via `IntersectionObserver` inside `decorate()` — never in `head.html`.' },
     ],
-    nextTool: 'scaffold_block (and scaffold_model for container blocks)',
+    nextTool: 'generate_block_from_design (if design input) OR scaffold_block (no design). Then scaffold_model for container blocks.',
     notes: [
-      'Pass through ONLY fields the user named. Never auto-add description / image / CTA fields.',
+      'Pass through ONLY the fields the user named. Never auto-add image / CTA / description fields.',
       'After scaffolding, run `validate_block` and (for above-the-fold blocks) `check_performance`.',
+      'Always include a `classes` multiselect field (variants) in the UE model — auto-injected by scaffold_block.',
     ],
   },
 
@@ -95,50 +102,10 @@ const QUESTION_SETS: Record<Intent, QuestionSet> = {
     ],
   },
 
-  'new-storefront-block': {
-    summary: 'User wants a new EDS Commerce Storefront block (mounting a drop-in).',
-    preflight: [
-      'Call `detect_project_type` and confirm `storefront`.',
-      'Call `lookup_dropin` to see the catalog of available drop-ins (cart, checkout, pdp, product-discovery, recommendations, account, auth, wishlist, quick-order, order, payment-services, personalization).',
-    ],
-    required: [
-      { id: 'blockName', question: 'Block name in kebab-case (e.g. `commerce-cart`, `commerce-product-details`)?' },
-      { id: 'dropin',    question: 'Which drop-in does it mount?', hint: 'Required if blockName is not in the canonical catalog.' },
-    ],
-    optional: [
-      { id: 'container',     question: 'Container override (e.g. `MiniCart` instead of default `Cart`)?' },
-      { id: 'variant',       question: 'CSS variant (compact / wide / minimal / with-rail)?' },
-      { id: 'authorFields',  question: 'Any author-editable fields around the drop-in (heading, intro copy, CTA target)?' },
-      { id: 'slotOverrides', question: 'Any slot overrides? (e.g. EmptyCart, ProductAttributes, PaymentMethods)' },
-      { id: 'styling',       question: 'Brand colours / fonts / radius? (Used for `style_dropin`.)' },
-    ],
-    nextTool: 'scaffold_commerce_block, then customize_dropin_slot per slot, then style_dropin',
-    notes: [
-      'After scaffolding, run `validate_storefront` to confirm dropin wiring and pre-LCP discipline.',
-    ],
-  },
-
-  'add-dropin': {
-    summary: 'User wants to install / wire a single Adobe Commerce drop-in.',
-    preflight: [
-      'Call `detect_project_type` and confirm `storefront`. If `eds`, prompt the user to convert with `scaffold_storefront_project` first.',
-      'Call `lookup_dropin` to see the catalog and current install status.',
-    ],
-    required: [
-      { id: 'dropin', question: 'Which drop-in? (cart / checkout / order / pdp / product-discovery / product-recommendations / personalization / payment-services / account / auth / wishlist / quick-order)' },
-    ],
-    optional: [
-      { id: 'container', question: 'Container override (e.g. MiniCart instead of Cart)?' },
-    ],
-    nextTool: 'add_dropin',
-    notes: ['After install, remind the user to run `npm run postinstall` to sync `scripts/__dropins__/`.'],
-  },
-
   'style-or-theme': {
     summary: 'User wants to update theme / colours / fonts / spacing.',
     preflight: [
       'Call `detect_project_type`.',
-      'For storefront: theme via `style_dropin` (per drop-in or global) using @dropins/tools design tokens.',
       'For EDS: edit `styles/styles.css` CSS variables directly.',
       'For AEMaaCS / 6.5 LTS: edit clientlib CSS or component CSS.',
     ],
@@ -153,7 +120,7 @@ const QUESTION_SETS: Record<Intent, QuestionSet> = {
       { id: 'bodyFont',         question: 'Body font family?' },
       { id: 'radius',           question: 'Corner style: sharp (2px), soft (8px), or pill (9999px)?' },
     ],
-    nextTool: 'style_dropin (storefront) OR direct CSS edits (EDS / AEM)',
+    nextTool: 'Direct CSS edits in the matching EDS or AEM styling surface',
     notes: [
       'Tokens > hex literals — wire colours to `var(--color-*)`, fonts to `var(--type-*-font-family)`.',
       'For EDS: never style `.<block>-wrapper` or `.<block>-container` (auto-generated).',
@@ -175,28 +142,31 @@ const QUESTION_SETS: Record<Intent, QuestionSet> = {
       { id: 'recentEdits', question: 'Any recent edits or commits that might have caused it?' },
       { id: 'expected',    question: 'What should it look / behave like instead?' },
     ],
-    nextTool: 'validate_block (EDS) / validate_storefront (storefront) / `fix-block` prompt',
+    nextTool: 'validate_block (EDS) / direct diagnosis for AEM / `fix-block` prompt',
     notes: ['Read the block files BEFORE proposing a fix. Diagnose first; never patch blindly.'],
   },
 
   'migrate-page': {
-    summary: 'User wants to migrate one URL into the EDS project.',
+    summary: 'User wants to build one page into the EDS project from a URL, a design image/screenshot, or a Figma frame.',
     preflight: [
       'Call `detect_project_type` and confirm `eds`.',
-      'Confirm Microsoft Playwright MCP is installed (`@playwright/mcp`). If not, instruct install of `npx @playwright/mcp@latest`.',
-      'Use the `migrate-page-to-eds` prompt for the full Adobe page-import workflow.',
+      'For `sourceType: "url"`: confirm Microsoft Playwright MCP is installed (`@playwright/mcp`). If not, instruct install of `npx @playwright/mcp@latest`.',
+      'For `sourceType: "figma"`: confirm a Figma MCP tool is installed; otherwise fall back to `sourceType: "image"` with an exported PNG.',
+      'Use the `migrate-page-to-eds` prompt for the full Adobe page-import workflow — pass `sourceType: url|image|figma` plus the matching source param (`sourceUrl` / `imageRefs` / `figmaUrl`).',
+      'For image/Figma sources, or one introducing a new brand/theme, consider `scaffold_migration_plan` first (advisory, writes to `.migration/plans/`) before the build prompt.',
     ],
     required: [
-      { id: 'sourceUrl',    question: 'Source URL to migrate?' },
-      { id: 'htmlFilePath', question: 'Output path for `.plain.html` (e.g. `us/en/about.plain.html`, or `index.plain.html` for homepage)?' },
+      { id: 'sourceType', question: 'Source: a live URL, a design image/screenshot, or a Figma frame?' },
+      { id: 'source',     question: 'The source URL, image path(s), or Figma URL (matching the sourceType above)?' },
+      { id: 'htmlFilePath', question: 'Output path for `.plain.html` (e.g. `us/en/about.plain.html`, or `index.plain.html` for homepage)? For image/Figma sources, also confirm `pageName` (kebab-case) to derive this from.' },
     ],
     optional: [
       { id: 'authoritative', question: 'Do you own the source content, or is this a structural reverse-engineering exercise (replace text / images with placeholders)?' },
       { id: 'reuseBlocks',   question: 'Prefer to reuse existing blocks where possible, or scaffold new ones?' },
     ],
-    nextTool: 'migrate-page-to-eds prompt → eds_page_import_skills_index, eds_block_html_structure, eds_generate_import_html',
+    nextTool: 'migrate-page-to-eds prompt (sourceType: url|image|figma) → eds_page_import_skills_index, eds_block_html_structure, generate_block_from_design (new blocks for image/figma), eds_generate_import_html',
     notes: [
-      'One URL per session. For multi-page migrations, run the prompt once per URL.',
+      'One page per session. For multi-page builds, run the prompt once per page.',
       'Reverse-engineer structure + theme, not copyrighted content.',
     ],
   },
@@ -267,8 +237,28 @@ const QUESTION_SETS: Record<Intent, QuestionSet> = {
       { id: 'contentSource', question: 'Google Drive or SharePoint?' },
       { id: 'folderId',      question: 'Drive folder ID or SharePoint path?' },
     ],
-    nextTool: 'eds_config (EDS) / eds_storefront_config (storefront)',
+    nextTool: 'eds_config',
     notes: [],
+  },
+
+  'warm-up': {
+    summary: 'Session warm-up — loads project context before any work begins. No user questions needed; the agent reads docs and reports back.',
+    preflight: [
+      'Read **AGENTS.md** at the workspace root. If missing, call `ensure_agents_md` to generate it.',
+      'Read **.project-summary.md** at the workspace root. If missing, call `project_summary` and write the result to that file.',
+      'Read the project config: `.aem-skills-config.yaml` (AEMaaCS), OR root `pom.xml` + `core/pom.xml` (AEM 6.5 LTS / AMS), OR `package.json` + `head.html` + `fstab.yaml` (EDS).',
+      'If a file named `INSTRUCTIONS.md`, `.instructions.md`, or `CONTEXT.md` exists at the project root, read it — it contains project-specific rules that override general guidance.',
+      'List all folders under `blocks/` to count existing blocks.',
+      'Quick-grep for open TODO / FIXME comments across JS and CSS files.',
+    ],
+    required: [],
+    optional: [],
+    nextTool: 'Report findings to the user, then ask: “What would you like to work on today?”',
+    notes: [
+      'Report back: project type, block count, any brand/naming conventions found in INSTRUCTIONS.md or AGENTS.md, and any open TODOs.',
+      'Context window note (from Adobe’s Experience Modernization Agent guide): over long sessions earlier instructions may be forgotten. If the agent loses context, ask it to re-read `.project-summary.md` and restart with a fresh warm-up prompt.',
+      'Design token order: site-wide design (global CSS custom properties in `styles/styles.css`) must be complete before styling individual blocks — block CSS references those tokens.',
+    ],
   },
 
   unknown: {
@@ -280,7 +270,7 @@ const QUESTION_SETS: Record<Intent, QuestionSet> = {
       { id: 'scope',        question: 'Single block / page, or a project-wide change?' },
     ],
     optional: [
-      { id: 'projectType',  question: 'What kind of project is this? (EDS / EDS Commerce Storefront / AEMaaCS / AEM 6.5 LTS / not sure — I can run `detect_project_type`.)' },
+      { id: 'projectType',  question: 'What kind of project is this? (EDS / AEMaaCS / AEM 6.5 LTS / not sure — I can run `detect_project_type`.)' },
       { id: 'design',       question: 'Do you have a design? Figma URL, screenshot, or live URL?' },
     ],
     nextTool: 'Re-call `clarify_task` with the now-known intent.',
@@ -289,8 +279,7 @@ const QUESTION_SETS: Record<Intent, QuestionSet> = {
 };
 
 const INTENT_KEYWORDS: { intent: Intent; keywords: RegExp }[] = [
-  { intent: 'new-storefront-block', keywords: /\b(commerce|cart|checkout|pdp|product\s*details|product\s*list|recommendations|wishlist|drop-?in)\b/i },
-  { intent: 'add-dropin',           keywords: /\b(add|install|wire)\b.*\b(drop-?in)\b/i },
+  { intent: 'warm-up',              keywords: /\b(warm.?up|load.?context|read.?project|start.?session|begin.?session|hello|good\s*(morning|afternoon|evening|day))\b/i },
   { intent: 'migrate-page',         keywords: /\b(migrate|import|scrape)\b.*\b(page|url|site)\b/i },
   { intent: 'fix-bug',              keywords: /\b(fix|bug|broken|not working|error|crash|wrong)\b/i },
   { intent: 'style-or-theme',       keywords: /\b(theme|colou?r|font|brand|style|palette|spacing|tokens?)\b/i },
@@ -316,7 +305,7 @@ export function registerClarifyTask(server: McpServer) {
     `Return the **logical clarifying questions** an AI coding agent (Copilot / Cursor / Cline / Continue) MUST ask the user before generating code. Call this the moment a user sends a request that touches scaffolding / migration / theming / fixing / refactoring — BEFORE calling any scaffold / generate / migrate tool. Pass either an explicit \`intent\` or the raw \`userPrompt\` and the tool will infer one. Returns: pre-flight checks, required questions (must be answered before proceeding), optional questions (improve quality), and the next tool to call once answers are collected. Pair with \`component_interview\` for component-specific deep-dives, and with \`detect_project_type\` for the project-summary first-trigger gate.`,
     {
       intent: z
-        .enum(['new-block', 'new-component', 'new-storefront-block', 'add-dropin', 'style-or-theme', 'fix-bug', 'migrate-page', 'add-feature', 'refactor', 'performance', 'configure-project', 'unknown'])
+        .enum(['new-block', 'new-component', 'style-or-theme', 'fix-bug', 'migrate-page', 'add-feature', 'refactor', 'performance', 'configure-project', 'warm-up', 'unknown'])
         .optional()
         .describe('Explicit intent. If omitted, the tool tries to infer from `userPrompt`.'),
       userPrompt: z.string().optional().describe('The user\'s raw request — used to infer intent when `intent` is omitted.'),

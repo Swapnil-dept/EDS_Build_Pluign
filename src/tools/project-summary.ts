@@ -22,12 +22,12 @@ function unique(items: string[]): string[] {
   return [...new Set(items.filter(Boolean))];
 }
 
-function extractCssVariables(stylesCss?: string): string[] {
+export function extractCssVariables(stylesCss?: string): string[] {
   if (!stylesCss) return [];
   return unique([...stylesCss.matchAll(/--([a-z0-9-]+)\s*:/gi)].map((match) => `--${match[1]}`)).slice(0, 12);
 }
 
-function extractFontHints(stylesCss?: string, headHtml?: string): string[] {
+export function extractFontHints(stylesCss?: string, headHtml?: string): string[] {
   const hints: string[] = [];
   if (stylesCss) {
     for (const match of stylesCss.matchAll(/font-family\s*:\s*([^;]+);/gi)) {
@@ -57,17 +57,7 @@ function summarizeFunctionality(input: SummaryInput, projectType: ReturnType<typ
   const scripts = listLines(input.scriptsDirListing);
   const items: string[] = [];
 
-  if (projectType.type === 'storefront') {
-    if (projectType.installedDropins.length) {
-      items.push(`Commerce storefront with drop-ins: ${projectType.installedDropins.join(', ')}`);
-    } else {
-      items.push('Commerce storefront patterns detected, but no specific drop-ins were provided in the input.');
-    }
-    if (scripts.includes('initializers.js')) items.push('Drop-ins are likely mounted through scripts/initializers.js.');
-    if (blocks.some((name) => name.startsWith('commerce-'))) {
-      items.push(`Commerce block wrappers present: ${blocks.filter((name) => name.startsWith('commerce-')).join(', ')}`);
-    }
-  } else if (projectType.type === 'eds') {
+  if (projectType.type === 'eds') {
     if (blocks.length) items.push(`EDS block library present: ${blocks.slice(0, 10).join(', ')}`);
     if (root.includes('fstab.yaml')) items.push('Content is mounted through fstab.yaml.');
     if (scripts.length) items.push(`Global script surface: ${scripts.join(', ')}`);
@@ -99,7 +89,7 @@ function summarizeGlobalDefinitions(input: SummaryInput): { theme: string[]; sec
   if (/adobeDataLayer\s*=/.test(input.headHtml ?? '')) runtime.push('Adobe Client Data Layer bootstrap detected in head.html.');
   if (/preconnect/i.test(input.headHtml ?? '')) runtime.push('head.html includes preconnect hints for global network setup.');
   if (scripts.includes('scripts.js')) runtime.push('scripts.js is the global runtime entrypoint.');
-  if (scripts.includes('initializers.js')) runtime.push('initializers.js handles shared storefront container mounts.');
+  if (scripts.includes('initializers.js')) runtime.push('initializers.js handles shared runtime initialization.');
   if (scripts.includes('configs.js')) runtime.push('configs.js centralizes runtime configuration lookups.');
 
   const securityKeys = configKeys.filter((key) => /(auth|token|secret|key|encrypt|csrf|credential|password)/i.test(key));
@@ -191,7 +181,7 @@ export function registerProjectSummary(server: McpServer) {
       lines.push('## Identity');
       lines.push(`- Project type: ${detection.type}`);
       lines.push(`- Confidence: ${detection.confidence}`);
-      lines.push(`- Scores: storefront ${detection.score >= 0 ? '+' : ''}${detection.score}, aemaacs +${detection.aemScore}, aem65lts +${detection.aem65Score}`);
+      lines.push(`- Scores: detection ${detection.score >= 0 ? '+' : ''}${detection.score}, aemaacs +${detection.aemScore}, aem65lts +${detection.aem65Score}`);
       if (detection.installedDropins.length) lines.push(`- Installed drop-ins: ${detection.installedDropins.join(', ')}`);
       if (detection.detectedAemModules.length) lines.push(`- Detected AEM modules: ${detection.detectedAemModules.join(', ')}`);
       lines.push('');

@@ -193,7 +193,6 @@ To make GitHub Copilot automatically use the right tools and follow correct conv
 | Project type | Template file | When to use |
 |---|---|---|
 | AEM Edge Delivery Services | [`templates/copilot-instructions/eds.md`](templates/copilot-instructions/eds.md) | `aem-boilerplate` projects |
-| AEM EDS + Commerce Storefront | [`templates/copilot-instructions/eds-storefront.md`](templates/copilot-instructions/eds-storefront.md) | `aem-boilerplate-commerce` projects |
 | AEM as a Cloud Service | [`templates/copilot-instructions/aem-cloud-service.md`](templates/copilot-instructions/aem-cloud-service.md) | AEMaaCS Maven / Java projects |
 | AEM 6.5 LTS / Managed Services | [`templates/copilot-instructions/aem-managed-service.md`](templates/copilot-instructions/aem-managed-service.md) | AEM 6.5 LTS / AMS on-prem projects |
 
@@ -246,7 +245,7 @@ The agent will call `detect_project_type`, then `bootstrap_workspace_instruction
 }
 ```
 
-Valid `projectType` values: `eds` · `storefront` · `aemaacs` · `aem65lts`
+Valid `projectType` values: `eds` · `aemaacs` · `aem65lts`
 
 ---
 
@@ -256,7 +255,7 @@ Valid `projectType` values: `eds` · `storefront` · `aemaacs` · `aem65lts`
 
 | Tool | Description |
 |---|---|
-| `detect_project_type` | Inspect package.json, dir listings, head.html, config.json, fstab.yaml, **plus pom.xml, .aem-skills-config.yaml, and ui.apps/core/dispatcher listings**, and decide whether the workspace is a vanilla EDS project, an EDS Commerce Storefront, or **AEM as a Cloud Service** (Maven/Java). Returns a confidence-scored verdict, installed drop-ins / detected AEM modules, mismatch warnings (e.g. missing `AGENTS.md` or `.aem-skills-config.yaml`), and the recommended next tools. |
+| `detect_project_type` | Inspect package.json, dir listings, head.html, config.json, fstab.yaml, **plus pom.xml, .aem-skills-config.yaml, and ui.apps/core/dispatcher listings**, and decide whether the workspace is a vanilla EDS project or an AEM Maven project (**AEM as a Cloud Service** / **AEM 6.5 LTS / AMS**). Returns a confidence-scored verdict, detected AEM modules, mismatch warnings (e.g. missing `AGENTS.md` or `.aem-skills-config.yaml`), and the recommended next tools. |
 | `project_summary` | Generate or refresh a root summary file such as `.project-summary.md` / `PROJECT_SUMMARY.md`. Captures detected project type, functional scope, global definitions (theme CSS, runtime scripts, auth/encryption/config signals), and the latest session delta so each session starts with current context. |
 
 ### Block & project tools
@@ -274,77 +273,11 @@ Valid `projectType` values: `eds` · `storefront` · `aemaacs` · `aem65lts`
 | `search_block_collection` | Search Adobe's Block Collection and community Block Party repos |
 | `eds_config` | Get configuration templates (fstab, head.html, redirects, headers, robots, etc.) |
 | `eds_scripts_guide` | Guidance for customizing scripts.js, delayed.js, and aem.js |
+| `scaffold_migration_plan` | Generate a section-by-section build plan for a full page (reuse-vs-new-block decisions, content-authoring approach, brand/token notes, checklist) formatted for `.migration/plans/<page>.md`. Advisory — recommended for screenshot-only builds or pages introducing a new brand. |
+| `generate_project_md` | Generate/refresh `PROJECT.md` — a durable project map (block inventory + variants, design tokens, page list, section styles, import infrastructure, multi-brand notes). Read this first, before the AGENTS.md workflow. |
+| `eds_multibrand_theming_guide` | Guidance for serving multiple brands/themes from one EDS repo via body-class token scoping, shared header/footer brand checks, and `promoteInlineMetadata()`. |
+| `eds_visual_verification_guide` | Guidance for verifying a built/migrated page: DOM-snapshot checks, computed-style checks against tokens, and a final pixel-diff against a reference screenshot. |
 
-### Storefront tools (Adobe Commerce drop-ins)
-
-| Tool | Description |
-|---|---|
-| `scaffold_storefront_project` | Bootstrap a new EDS + Adobe Commerce storefront from `aem-boilerplate-commerce`. Returns install steps, dropin selection, initializer wiring, configs, and the project layout. |
-| `add_dropin` | Install a single drop-in (cart, checkout, pdp, …) — npm install + postinstall + initializer + block scaffold + slot/event reference. |
-| `lookup_dropin` | Browse the catalog of all 12 drop-ins (B2C + B2B): packages, containers, slots, events, suggested block names. |
-| `customize_dropin_slot` | Generate a slot-override snippet (EmptyCart, ProductAttributes, PaymentMethods, …) using the SlotContext API. |
-| `style_dropin` | Brand a drop-in via Drop-in SDK design tokens (`--color-brand-*`, `--type-*`, `--spacing-*`, `--shape-*`). Outputs scoped CSS. |
-| `scaffold_commerce_block` | Scaffold a complete commerce block (JS + CSS + README + sample-content + `_<block>.json` UE config + test.html) that mounts a drop-in container. |
-| `validate_storefront` | Sanity-check a storefront project: dropin/postinstall sync, initializer wiring, config completeness, ACDL bootstrap, pre-LCP discipline. |
-| `eds_storefront_config` | Generate `default-site.json`, `default-config.json`, `demo-config.json` (PaaS/SaaS), `demo-config-aco.json` (Adobe Commerce Optimizer), `default-query.yaml`, `default-sitemap.yaml`, `head.html`, and `scripts/configs.js`. |
-| `commerce_events_guide` | Guide for Adobe Client Data Layer + `@dropins/tools` event bus. Includes setup of `@adobe/magento-storefront-events-sdk` + `@adobe/magento-storefront-event-collector` and analytics/cart-counter/custom-event snippets. |
-| `commerce_skills_setup` | Step-by-step guide for installing [Adobe Commerce AI Agent Skills](https://experienceleague.adobe.com/developer/commerce/storefront/boilerplate/ai-agent-skills/) via `aio commerce extensibility tools-setup`. Covers prerequisites (Node 22+, `@adobe/aio-cli`, Commerce plugin), the 6 installed skills (project-manager, researcher, block-developer, drop-in-developer, content-modeler, tester), agent-specific install directories, CI/headless flags, and troubleshooting. Pass an agent name (e.g. `"GitHub Copilot"`, `"Cursor"`) to get a tailored non-interactive install command. |
-
----
-
-## Adobe Commerce AI Agent Skills
-
-Adobe Commerce AI Agent Skills give your coding agent deep knowledge about storefront architecture, drop-in APIs, block conventions, and best practices. Installed once per project via the Adobe I/O CLI, they work with all major agents (Cursor, GitHub Copilot, Claude Code, Windsurf, and more).
-
-### Quick setup
-
-```bash
-# 1. Ensure Node.js 22+
-node --version   # must be >= 22.0.0
-
-# 2. From root of your AEM Boilerplate Commerce project — no global install needed
-npx @adobe/aio-cli@latest plugins:install https://github.com/adobe-commerce/aio-cli-plugin-commerce && \
-  npx @adobe/aio-cli@latest commerce extensibility tools-setup
-#   → Select: AEM Boilerplate Commerce
-#   → Select: your agent (GitHub Copilot / Cursor / Claude Code / …)
-```
-
-Non-interactive (CI / scripted):
-
-```bash
-npx @adobe/aio-cli@latest plugins:install https://github.com/adobe-commerce/aio-cli-plugin-commerce && \
-  npx @adobe/aio-cli@latest commerce extensibility tools-setup \
-  --starter-kit aem-boilerplate-commerce \
-  --agent "GitHub Copilot" \
-  --package-manager npm
-```
-
-> After install, **restart your coding agent** so it picks up the new skills and MCP configuration.
-
-### The 6 installed skills
-
-| Skill | What it does |
-|---|---|
-| **Project manager** | Scopes tasks and guides phased delivery before any code is written |
-| **Researcher** | Looks up drop-in APIs, slot names, event payloads, and TypeScript definitions before implementing |
-| **Block developer** | Builds EDS blocks using correct DOM patterns and CSS scoping |
-| **Drop-in developer** | Customizes drop-in components via containers, slots, events, and API functions |
-| **Content modeler** | Designs block table structures for both developers and CMS authors |
-| **Tester** | Verifies implementations in a real browser; checks Core Web Vitals and accessibility |
-
-### What gets installed
-
-| File | Purpose |
-|---|---|
-| `AGENTS.md` (project root) | Top-level instructions your agent reads at the start of every session |
-| `<agent-skills-dir>/` | Skill files (e.g. `.github/skills/` for GitHub Copilot, `.cursor/skills/` for Cursor) |
-| MCP config | Connects agent to `commerce-extensibility:search-commerce-docs` for live docs search |
-
-Use the `commerce_skills_setup` MCP tool to get agent-specific install commands and troubleshooting help.
-
-**Docs:** https://experienceleague.adobe.com/developer/commerce/storefront/boilerplate/ai-agent-skills/
-
----
 
 ### AEM as a Cloud Service tools (Maven / Java stack)
 
@@ -369,9 +302,6 @@ Mirror Adobe's [skills/aem/cloud-service](https://github.com/adobe/skills/tree/b
 | Block Guide | `eds://docs/block-development` | DOM pipeline, CSS scoping, content authoring tables |
 | Cheatsheet | `eds://docs/cheatsheet` | Quick reference — common patterns, file locations, CLI commands |
 | Adobe Skills | `eds://docs/adobe-skills` | CDD workflow, content modeling, UE component model, code review |
-| Storefront Architecture | `eds://docs/storefront-architecture` | Project layout, dropin lifecycle, configs, backends (PaaS / ACCS / ACO) |
-| Storefront Drop-ins | `eds://docs/storefront-dropins` | Catalog of all drop-ins with packages, containers, slots, events |
-| Storefront SDK | `eds://docs/storefront-sdk` | `@dropins/tools` design system, tokens, container/slot pattern, event bus |
 | AEMaaCS Skills | `eds://docs/aemaacs-skills` | Index of Adobe's AEM Cloud Service skills (BETA) — ensure-agents-md, best-practices, create-component, dispatcher, migration, aem-workflow |
 | AEMaaCS Architecture | `eds://docs/aemaacs-architecture` | Maven project layout, hard rules (`/libs` immutable, OSGi DS R6, service users, Cloud Manager deploy), and the migration pattern reference table |
 
@@ -382,9 +312,6 @@ Mirror Adobe's [skills/aem/cloud-service](https://github.com/adobe/skills/tree/b
 | `new-block` | Step-by-step guide for creating a new EDS block from scratch |
 | `fix-block` | Diagnose and fix issues with an existing EDS block |
 | `design-to-block` | Turn a design (text / screenshot / Figma URL) into an EDS block |
-| `new-storefront-project` | Bootstrap a new EDS + Adobe Commerce storefront end-to-end |
-| `add-and-customize-dropin` | Install a drop-in, scaffold its block, override slots, apply brand tokens |
-| `storefront-from-design` | Translate a page design into commerce blocks composed from drop-ins |
 | `new-aem-component` | Scaffold an AEMaaCS component (Java / HTL / Granite UI dialog) with Step-0 detection + `.aem-skills-config.yaml` gate |
 | `migrate-to-cloud-service` | Migrate one legacy AEM pattern (scheduler / replication / event* / asset* / htlLint) to AEMaaCS |
 | `aem-dispatcher-task` | Route an AEMaaCS Dispatcher task (config / advisory / incident / perf / security) to the right specialist guidance |

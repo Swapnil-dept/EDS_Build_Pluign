@@ -58,64 +58,6 @@ export const HARD_CONSTRAINTS = [
   'Block folders must be lowercase, hyphenated: my-block/ not MyBlock/',
 ];
 
-// ─── Extended Constraints (Premium — production-learned) ────────
-// These rules are learned from production EDS deployments and go
-// beyond what Adobe publishes in public documentation.
-
-export const EXTENDED_CONSTRAINTS = [
-  'Lighthouse score must remain 100 — GitHub bot auto-fails PRs otherwise',
-  'No localStorage/sessionStorage in blocks — server-rendered content only',
-  'Each block must have exactly ONE JavaScript file — all variations handled inside via block.classList.contains()',
-  'Always use block.querySelector() inside decorate() — document.querySelector() breaks when multiple instances of the same block exist on one page',
-  'Never use .{blockname}-container or .{blockname}-wrapper in your own CSS — EDS auto-generates these on the parent section and block wrapper respectively',
-];
-
-// ─── Block HTML Contract (Premium — production-learned) ────────
-// These rules go beyond public Adobe docs. The multi-instance bug
-// explanation, reserved class diagnosis, and test.html contract
-// are learned from production EDS deployments.
-
-export const BLOCK_HTML_CONTRACT = `
-## Block HTML Contract Rules
-
-### DOM Structure Contract
-The EDS block DOM follows a strict hierarchy:
-\`\`\`
-block element (div.block-name)
-  └─ row(s) as direct children (div)
-       └─ cell(s) as children of rows (div)
-\`\`\`
-A common mistake is adding extra wrapper divs. The decorate function must work with exactly this structure.
-
-### Single JavaScript File Rule
-Each block must have exactly **ONE** JavaScript file: \`blocks/<name>/<name>.js\`.
-All variation logic goes inside the single file using class checks:
-\`\`\`javascript
-export default function decorate(block) {
-  const isWide = block.classList.contains('wide');
-  const isDark = block.classList.contains('dark');
-  // All variant-specific logic here
-}
-\`\`\`
-Never create separate JS files per variant (e.g. \`hero-dark.js\`, \`hero-wide.js\`).
-
-### Multi-Instance Safety
-\`block.querySelector()\` is scoped to the block element. Using \`document.querySelector('.block-name')\` will always return the **first** instance on the page, silently breaking all subsequent instances. This is one of the most common production bugs in EDS.
-
-### Reserved Class Names
-EDS auto-generates wrapper elements with these class names — **never** use them in your own CSS:
-- \`.{blockname}-container\` — auto-generated on the parent **section** div
-- \`.{blockname}-wrapper\` — auto-generated on the block's **wrapper** div
-
-Using these accidentally applies your styles to the wrong elements, causing subtle layout bugs that are difficult to diagnose.
-
-### test.html Contract
-When testing blocks locally with test.html:
-1. \`block.dataset.blockName\` must be set before calling \`loadBlock()\`
-2. \`document.body.classList.add('appear')\` must be called before \`loadBlock()\` — otherwise the page stays hidden
-3. The block DOM must exactly match the structure EDS generates (row > cell hierarchy)
-`;
-
 // ─── Block DOM Pipeline ─────────────────────────────────────────
 
 export const BLOCK_DOM_PIPELINE = `
@@ -222,15 +164,6 @@ h2 { font-size: 2rem; }        /* bare element — leaks globally */
 - Use \`font: inherit\` on buttons and inputs
 `;
 
-// ─── CSS Safe Suffixes (Premium — curated from production) ──────
-// These are production-tested class name suffixes that won't
-// collide with EDS auto-generated classes.
-
-export const CSS_SAFE_SUFFIXES = [
-  '-backdrop', '-panel', '-inner', '-grid', '-list', '-content', '-dialog',
-  '-header', '-body', '-footer', '-item', '-media', '-text', '-overlay',
-];
-
 // ─── Loading Lifecycle ──────────────────────────────────────────
 
 export const LOADING_LIFECYCLE = `
@@ -280,16 +213,6 @@ export const FIELD_TYPES = [
   { component: 'container',    valueType: 'object',  description: 'Multi-field container for repeatable groups' },
   { component: 'tab',          valueType: 'object',  description: 'Tab group for organizing fields in the property panel' },
 ];
-
-// Legacy → UE canonical mapping. Prefer the canonical name in new code.
-export const FIELD_TYPE_ALIASES: Record<string, string> = {
-  'text-input': 'text',
-  'text-area': 'textarea',
-};
-
-export function normalizeFieldType(t: string): string {
-  return FIELD_TYPE_ALIASES[t] ?? t;
-}
 
 // ─── Field Collapse Conventions (Premium — tribal knowledge) ────
 // Adobe docs mention field collapse briefly but don't provide

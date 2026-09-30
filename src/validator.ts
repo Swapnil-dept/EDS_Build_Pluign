@@ -280,7 +280,10 @@ export function validateBlock(blockName: string, files: BlockFiles): ValidationR
 
   if (files.json) {
     try {
-      const model = JSON.parse(files.json);
+      const parsed = JSON.parse(files.json);
+      // Canonical shape (generateBlockJsonFile / UE): { definitions, models: [{ id, fields }], filters }.
+      // Also accept a flat { id, fields } shape for back-compat with hand-authored files.
+      const model = Array.isArray(parsed.models) ? parsed.models[0] ?? {} : parsed;
 
       if (!model.id) {
         issues.push({
