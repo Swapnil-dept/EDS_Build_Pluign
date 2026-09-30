@@ -8,22 +8,24 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
  * page alongside a default WKND-style theme).
  */
 export function registerEdsMultibrandTheming(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'eds_multibrand_theming_guide',
-    'Guidance for serving multiple brands/themes from one EDS repo: page-metadata theme key → body class, token scoping under `body.<brand>`, shared header.js/footer.js brand checks, and `promoteInlineMetadata()` so the theme also works on the local preview server. Includes a production-scale recommendation (separate sites/repos sharing a block library vs. body-class scoping for demos).',
     {
+      description: 'Guidance for serving multiple brands/themes from one EDS repo: page-metadata theme key → body class, token scoping under `body.<brand>`, shared header.js/footer.js brand checks, and `promoteInlineMetadata()` so the theme also works on the local preview server. Includes a production-scale recommendation (separate sites/repos sharing a block library vs. body-class scoping for demos).',
+      inputSchema: {
       topic: z
         .enum(['overview', 'body-class-scoping', 'shared-header-footer', 'promote-inline-metadata', 'production-recommendation', 'all'])
         .default('all')
         .describe('Which multi-brand theming topic to get guidance on'),
       brandName: z.string().optional().describe('Brand name to substitute into the examples, e.g. "nippon"'),
     },
-    {
+      annotations: {
       title: 'EDS Multi-Brand Theming Guide',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ topic, brandName }) => {
       const brand = brandName ?? 'nippon';

@@ -300,22 +300,24 @@ function inferIntent(userPrompt?: string): Intent {
 }
 
 export function registerClarifyTask(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'clarify_task',
-    `Return the **logical clarifying questions** an AI coding agent (Copilot / Cursor / Cline / Continue) MUST ask the user before generating code. Call this the moment a user sends a request that touches scaffolding / migration / theming / fixing / refactoring — BEFORE calling any scaffold / generate / migrate tool. Pass either an explicit \`intent\` or the raw \`userPrompt\` and the tool will infer one. Returns: pre-flight checks, required questions (must be answered before proceeding), optional questions (improve quality), and the next tool to call once answers are collected. Pair with \`component_interview\` for component-specific deep-dives, and with \`detect_project_type\` for the project-summary first-trigger gate.`,
     {
+      description: `Return the **logical clarifying questions** an AI coding agent (Copilot / Cursor / Cline / Continue) MUST ask the user before generating code. Call this the moment a user sends a request that touches scaffolding / migration / theming / fixing / refactoring — BEFORE calling any scaffold / generate / migrate tool. Pass either an explicit \`intent\` or the raw \`userPrompt\` and the tool will infer one. Returns: pre-flight checks, required questions (must be answered before proceeding), optional questions (improve quality), and the next tool to call once answers are collected. Pair with \`component_interview\` for component-specific deep-dives, and with \`detect_project_type\` for the project-summary first-trigger gate.`,
+      inputSchema: {
       intent: z
         .enum(['new-block', 'new-component', 'style-or-theme', 'fix-bug', 'migrate-page', 'add-feature', 'refactor', 'performance', 'configure-project', 'warm-up', 'unknown'])
         .optional()
         .describe('Explicit intent. If omitted, the tool tries to infer from `userPrompt`.'),
       userPrompt: z.string().optional().describe('The user\'s raw request — used to infer intent when `intent` is omitted.'),
     },
-    {
+      annotations: {
       title: 'Clarify Task',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ intent, userPrompt }) => {
       const resolved: Intent = intent ?? inferIntent(userPrompt);

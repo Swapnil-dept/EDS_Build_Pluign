@@ -623,11 +623,11 @@ export function registerPrompts(server: McpServer) {
           `- **If Playwright MCP IS available**, do the following with it:\n` +
           `  1. \`browser_navigate\` to \`${sourceUrl}\`. Wait for network idle.\n` +
           `  2. **Scroll** the full page (\`browser_evaluate(() => window.scrollTo(0, document.body.scrollHeight))\` — repeat until scroll stops growing) so lazy images load.\n` +
-          `  3. \`browser_take_screenshot\` (full-page) → save to \`./import-work/screenshot.png\`.\n` +
+          `  3. **Capture screenshots for vision review.** Read \`browser_evaluate(() => window.innerHeight)\` for the viewport height, then scroll top-to-bottom in that increment, taking a \`browser_take_screenshot\` at each stop → \`./import-work/section-shots/shot-<N>.png\` (N = 0, 1, 2, …). Skip this for short pages (≤ 2 viewport heights) — the full-page shot below is enough. Then take one \`browser_take_screenshot\` (full-page) → \`./import-work/screenshot.png\` (used for the final pixel-diff in Step 5 regardless of page length).\n` +
           `  4. \`browser_evaluate(() => document.documentElement.outerHTML)\` → save **rendered HTML** as the basis for cleaned.html. Strip \`<script>\`, \`<style>\`, \`<noscript>\`, analytics/tracking iframes; rewrite \`<picture>\` srcset to a single \`src\`; convert background-image inline styles into \`<img>\` tags; resolve relative URLs to absolute. Save → \`./import-work/cleaned.html\`.\n` +
           `  5. \`browser_evaluate\` to extract metadata: title, og:title, og:description, og:image, canonical, JSON-LD. Build the image map (every \`<img src>\`, \`<picture>\` source, and CSS background-image URL → local path).\n` +
           `  6. **Download images** by reading each \`src\` (use \`browser_evaluate\` with \`fetch(...).blob()\` or call \`fetch\` directly from the host process). Convert WebP / AVIF / SVG → PNG with \`sharp\` if available; otherwise leave them as-is. Hash each URL → \`./import-work/images/<hash>.<ext>\`.\n` +
-          `  7. Compute \`paths\` from the source URL — \`htmlFilePath\` (sanitized lowercase, no .html extension, ends in \`.plain.html\`), \`mdFilePath\`, \`dirPath\`, \`filename\`, \`documentPath\`. Save \`./import-work/metadata.json\` with: \`url\`, \`timestamp\`, \`paths\`, \`screenshot\`, \`html.{filePath,size}\`, \`metadata\`, \`images.{count, mapping, stats}\`.\n\n` +
+          `  7. Compute \`paths\` from the source URL — \`htmlFilePath\` (sanitized lowercase, no .html extension, ends in \`.plain.html\`), \`mdFilePath\`, \`dirPath\`, \`filename\`, \`documentPath\`. Save \`./import-work/metadata.json\` with: \`url\`, \`timestamp\`, \`paths\`, \`screenshot\`, \`sectionShots\` (count + paths, or \`[]\`), \`html.{filePath,size}\`, \`metadata\`, \`images.{count, mapping, stats}\`.\n\n` +
           `**Success criteria:** \`./import-work/{metadata.json,screenshot.png,cleaned.html,images/}\` all exist.\n\n`
         : sourceType === 'image'
           ? `## Step 1 — Extract from design image(s) (image analog of \`scrape-webpage\`)\n\n` +
@@ -678,6 +678,9 @@ export function registerPrompts(server: McpServer) {
             `Target HTML path: ${inferredPath}\n\n` +
             `**Reference the official catalog.** Call \`eds_page_import_skills_index\` once at the start of the session so the chat has the canonical 19 EDS skills + URLs in context. Source: github.com/adobe/skills/tree/beta/skills/aem/edge-delivery-services/skills.\n\n` +
             `**Step 0 — gate.** Call \`detect_project_type\` with workspace snapshots. If it returns anything other than \`eds\`, STOP — page-import only applies to EDS / xwalk projects.${sourceType !== 'url' ? ' Also verify `pageName` was provided — required for image/Figma sources since there is no URL to infer a slug from.' : ''}\n\n` +
+            (sourceType === 'url'
+              ? `**Step 0.5 — template catalog lookup (advisory).** If \`.migration/catalog/page-templates.json\` exists, call \`scaffold_page_template_catalog\` with \`lookupUrlPattern: "${sourceUrl}"\` + its content as \`existingCatalog\`. A hit means a page with the same \`urlPattern\` was migrated before — reuse its known section count / style sequence / block list as your expected shape for Step 2/3, but still verify against this page's actual screenshot/DOM rather than skipping analysis. No file yet → proceed to Step 1 normally; you'll seed the catalog at the end.\n\n`
+              : '') +
             `**Project summary rule:** ${PROJECT_SUMMARY_WORKFLOW}\n\n` +
             `**Project-map advisory.** If \`PROJECT.md\` exists at the workspace root, read it before Step 2 so block reuse-vs-new decisions stay consistent with what already exists. Missing? Generate it with \`generate_project_md\` (optional, non-blocking).\n\n` +
             `**Build-plan advisory.** For a full-page build — and especially one with no live source (image/Figma) or one introducing a new brand/theme into an existing project — consider calling \`scaffold_migration_plan\` before Step 3 to record the section-by-section reuse-vs-new-block decisions to \`.migration/plans/<page>.md\`. This is a recommendation, not a gate; skip it for straightforward single-URL imports.\n\n` +
@@ -686,6 +689,9 @@ export function registerPrompts(server: McpServer) {
             `**Track progress with \`manage_todo_list\`** — one todo per Adobe step (1–5). Mark in-progress before starting each, completed immediately after.\n\n` +
             step1 +
             `## Step 2 — Identify Page Structure (\`identify-page-structure\` skill)\n\n` +
+            (sourceType === 'url'
+              ? `**You (the IDE assistant) MUST view \`./import-work/screenshot.png\` (and every \`section-shots/shot-*.png\` if captured) with your native vision capability before Step 2a.** Do not infer block types from \`cleaned.html\` text alone — patterns like carousel vs static grid, tabs vs accordion, or logo-wall vs cards are often only distinguishable visually. Use the DOM (cleaned.html) to confirm structure and copy, and the screenshot(s) to confirm the visual block pattern.\n\n`
+              : '') +
             `Two-level analysis from ${step2StructureBasis}:\n\n` +
             `**Step 2a — Section boundaries (Level 1).** Find visual / thematic breaks:\n` +
             `- background colour changes (white → grey → dark → white)\n` +
@@ -699,6 +705,9 @@ export function registerPrompts(server: McpServer) {
             `2. \`search_block_collection\` — Adobe Block Collection + community Block Party with purposes + live URLs.\n\n` +
             `**Output (write to \`./import-work/page-structure.json\`):**\n` +
             `\`\`\`json\n{\n  "sections": [\n    { "n": 1, "style": "light", "sequences": ["Large centred heading + paragraph + 2 buttons", "2 images side-by-side"] }\n  ],\n  "blockInventory": { "local": [...], "blockCollection": [...] }\n}\n\`\`\`\n\n` +
+            (sourceType === 'url'
+              ? `**Selector note (for Step 4/5.5 re-verification, and mandatory for multi-block pages before Step 4):** JS on the source page often moves/injects elements after initial paint, so a selector derived from the initial \`cleaned.html\` snapshot may not match the live DOM. For each section, additionally record a \`resolvedSelector\` you have checked against the LIVE page (not just \`cleaned.html\`) via \`browser_evaluate(() => document.querySelectorAll(sel).length)\` — prefer a stable container id/class over positional selectors. For pages with **5+ blocks**, call \`generate_selector_coverage_map\` with every section's \`resolvedSelector\` and every block's selector before Step 4 — it catches duplicate/colliding selectors and section-count mismatches structurally, before they become parser bugs.\n\n`
+              : '') +
             `## Step 3 — Authoring Analysis (\`authoring-analysis\` skill)\n\n` +
             `**For EVERY content sequence**, follow this mandatory order. Apply **David's Model** — prioritise the author experience.\n\n` +
             `**Step 3a — Default content check (FIRST).** Ask: "Can an author create this by typing in Word / Google Docs?" If YES → mark **DEFAULT CONTENT**, done. If NO (repeating structured pattern, interactive, complex layout, or needs decoration) → continue to 3b.\n\n` +
@@ -713,6 +722,7 @@ export function registerPrompts(server: McpServer) {
             `- Q3: Block typically has its own background (hero, banner, full-width CTA)? → SKIP.\n` +
             `- Otherwise (solid colour + visible padding, blocks like tabs / cards / accordion that inherit) → KEEP section-metadata with \`Style: <colour>\`.\n\n` +
             `**Output (write to \`./import-work/authoring-analysis.json\`):** every sequence has \`{ decision: "default-content" | "block", block?: "<name>", reason: "...", rows?: [...] }\`. Every section has \`{ sectionMetadata?: { Style: "..." } }\`.\n\n` +
+            `**Multi-block pages (5+ distinct block variants) — resumable generation (advisory but recommended):** call \`scaffold_generation_manifest\` with one entry per distinct block variant (set \`baseBlock\`/\`blockVariant\` when several variants share a family, e.g. \`cards-price\`/\`cards-plan\` → \`baseBlock: "cards"\`). Write the returned manifest to \`.migration/manifest/<pageSlug>.json\`, generate/validate each block (\`scaffold_block\` + \`scaffold_model\` + \`validate_block\`), then re-call the tool updating that entry's \`status\` before moving to the next — so a stopped/resumed session doesn't restart every block from scratch.\n\n` +
             `## Step 4 — Generate Import HTML (\`generate-import-html\` skill)\n\n` +
             `**⚠️ CRITICAL — complete content import.** Import EVERY sequence. NEVER truncate, summarise, or use placeholders. Section count in the output MUST match Step 2.\n\n` +
             `Call \`eds_generate_import_html\` with:\n` +
@@ -753,11 +763,25 @@ export function registerPrompts(server: McpServer) {
             `   - 404 on the page → \`--html-folder\` not set, OR using \`/index\` instead of \`/\`.\n` +
             `   - Images broken → wrong relative path (\`./images/...\` is correct when images are siblings of the HTML).\n` +
             `   - Raw HTML visible → block name typo or block file missing.\n\n` +
+            `## Step 5.5 — Completeness check + decision gate\n\n` +
+            `**Score it.** Compare every sequence recorded in Step 2 (\`page-structure.json\`) against what actually landed in the generated HTML. Report a completeness percentage: \`(sequences fully present) / (total sequences)\`.\n\n` +
+            `**Classify every gap** into exactly one of:\n` +
+            `- **Intentionally excluded** — content that cannot exist in static HTML: hover-only/JS-revealed content, live/backend-calculated values, hidden popups or loaders, duplicate mobile-only markup already covered elsewhere. State the reason for each.\n` +
+            `- **Actually missing** — anything else below 100%. If any gap falls here, go back to Step 4 and fix it before continuing — do not report a low score as "done".\n\n` +
+            `**Do not silently continue past this point.** Present the completeness score + gap classification, then stop and ask the user what to do next — offer options such as:\n` +
+            `- Apply design/theme (colours, fonts, spacing) — recommended once completeness is acceptable and every gap is classified as intentional.\n` +
+            `- Refine blocks first (fix a specific block's structure/behaviour before styling).\n` +
+            `- Deep comparison against the source (section-by-section pixel/content diff).\n` +
+            `- Something else.\n\n` +
+            `Wait for the user's choice before doing any further work — this prompt's job ends at a working, unstyled, content-complete page; styling is a separate pass.\n\n` +
+            (sourceType === 'url'
+              ? `**Seed the template catalog (advisory, do this once completeness is acceptable).** Call \`scaffold_page_template_catalog\` with a \`templateName\`, a \`urlPattern\` generalizing this page's path (e.g. \`/life-insurance-plans/*\`), \`sectionCount\`/\`sectionStyleSequence\` from \`page-structure.json\`, and \`blocks\` from the generation manifest. Write the result to \`.migration/catalog/page-templates.json\` — this is what Step 0.5 checks on the next page under the same pattern.\n\n`
+              : '') +
             `## Success criteria (Adobe page-import skill)\n\n` +
             `- ✅ All 5 todos marked complete.\n` +
             `- ✅ HTML file renders in the browser at the expected document path.\n` +
             `- ✅ Visual structure matches the original page (screenshot diff).\n` +
-            `- ✅ All content imported — zero truncation.\n` +
+            `- ✅ All content imported — zero unclassified truncation (Step 5.5 completeness score reported, every gap classified).\n` +
             `- ✅ Images accessible from the imported HTML.\n\n` +
             `## Hard constraints\n\n` +
             `- **Never run git commands** — staging and syncing the imported files is the user's call.\n` +

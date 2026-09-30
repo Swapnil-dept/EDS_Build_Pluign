@@ -108,19 +108,21 @@ Inbox missing? Check \`/var/workflow/instances\` for the running instance, confi
 };
 
 export function registerAem65Workflow(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'aem65_workflow',
-    `Route AEM 6.5 LTS / AMS Workflow tasks to the right specialist (workflow-model-design | workflow-development | workflow-triggering | workflow-launchers | workflow-debugging | workflow-triaging | workflow-orchestrator). Mirrors Adobe's "aem-workflow" skill index for 6.5. PRECONDITION: only after detect_project_type returns "aem65lts". Differs from the Cloud Service variant: JMX is allowed on 6.5 (purge / retry / stale detection), Felix SCR is still supported, and design-time models may live under /etc/workflow/models for legacy projects.`,
     {
+      description: `Route AEM 6.5 LTS / AMS Workflow tasks to the right specialist (workflow-model-design | workflow-development | workflow-triggering | workflow-launchers | workflow-debugging | workflow-triaging | workflow-orchestrator). Mirrors Adobe's "aem-workflow" skill index for 6.5. PRECONDITION: only after detect_project_type returns "aem65lts". Differs from the Cloud Service variant: JMX is allowed on 6.5 (purge / retry / stale detection), Felix SCR is still supported, and design-time models may live under /etc/workflow/models for legacy projects.`,
+      inputSchema: {
       intent: z.enum(['workflow-model-design', 'workflow-development', 'workflow-triggering', 'workflow-launchers', 'workflow-debugging', 'workflow-triaging', 'workflow-orchestrator']).describe('Which workflow specialist to route to.'),
       question: z.string().optional().describe('The user question, in their words.'),
     },
-    {
+      annotations: {
       title: 'AEM 6.5 LTS Workflow',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ intent, question }) => {
       const s = SUB_SKILLS[intent];

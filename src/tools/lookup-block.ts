@@ -3,18 +3,20 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { BLOCK_PATTERNS } from '../knowledge/eds-conventions.js';
 
 export function registerLookupBlock(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'lookup_block',
-    `Look up EDS block patterns, implementation guidance, and references. Returns common patterns with field definitions, CSS hints, and JS strategies. Also provides links to Adobe's Block Collection and community Block Party for existing implementations. Use before building a block to check if a pattern already exists.`,
     {
+      description: `Look up EDS block patterns, implementation guidance, and references. Returns common patterns with field definitions, CSS hints, and JS strategies. Also provides links to Adobe's Block Collection and community Block Party for existing implementations. Use before building a block to check if a pattern already exists.`,
+      inputSchema: {
       query: z.string().describe('Block name or description to search for (e.g. "hero", "tabbed content", "image carousel")'),
     },
-    {
+      annotations: {
       title: 'Look Up Block Patterns',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: true,
+    },
     },
     async ({ query }) => {
       const searchTerm = query.toLowerCase().trim();
@@ -113,6 +115,6 @@ export function registerLookupBlock(server: McpServer) {
       return {
         content: [{ type: 'text' as const, text: sections.join('\n\n') }],
       };
-    }
+    },
   );
 }

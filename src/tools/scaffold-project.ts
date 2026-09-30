@@ -4,10 +4,11 @@ import { PROJECT_STRUCTURE, LOADING_LIFECYCLE, HARD_CONSTRAINTS } from '../knowl
 import { CONFIG_TEMPLATES } from '../knowledge/eds-conventions.js';
 
 export function registerScaffoldProject(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'scaffold_project',
-    `Guide for setting up a new AEM Edge Delivery Services project. Returns step-by-step instructions, file structure, required configuration files, and common customization patterns. Covers both standard and repoless architectures. Does NOT create files directly — provides the complete blueprint and commands.`,
     {
+      description: `Guide for setting up a new AEM Edge Delivery Services project. Returns step-by-step instructions, file structure, required configuration files, and common customization patterns. Covers both standard and repoless architectures. Does NOT create files directly — provides the complete blueprint and commands.`,
+      inputSchema: {
       projectType: z
         .enum(['standard', 'repoless-code', 'repoless-content'])
         .describe('standard: full project | repoless-code: shared code repo | repoless-content: content-only site'),
@@ -25,12 +26,13 @@ export function registerScaffoldProject(server: McpServer) {
         .default(false)
         .describe('Include Commerce Drop-in integration setup'),
     },
-    {
+      annotations: {
       title: 'Scaffold EDS Project',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ projectType, siteName, contentSource, includeUE, includeCommerce }) => {
       const sections: string[] = [];
@@ -174,6 +176,6 @@ export function registerScaffoldProject(server: McpServer) {
           },
         ],
       };
-    }
+    },
   );
 }

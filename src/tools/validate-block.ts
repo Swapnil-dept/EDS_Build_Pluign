@@ -11,10 +11,11 @@ function formatIssue(issue: ValidationIssue): string {
 }
 
 export function registerValidateBlock(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'validate_block',
-    'Validate an AEM EDS block against coding standards and best practices. Checks JS, CSS, JSON model, and sample content. Returns errors, warnings, and suggested fixes.',
     {
+      description: 'Validate an AEM EDS block against coding standards and best practices. Checks JS, CSS, JSON model, and sample content. Returns errors, warnings, and suggested fixes.',
+      inputSchema: {
       blockName: z.string().describe('Block name in kebab-case'),
       js: z.string().optional().describe('Contents of block.js'),
       css: z.string().optional().describe('Contents of block.css'),
@@ -22,12 +23,13 @@ export function registerValidateBlock(server: McpServer) {
       content: z.string().optional().describe('Contents of sample-content.md'),
       readme: z.string().optional().describe('Contents of README.md'),
     },
-    {
+      annotations: {
       title: 'Validate EDS Block',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ blockName, js, css, json, content, readme }) => {
       const result = validateBlock(blockName, { js, css, json, content, readme });
@@ -63,6 +65,6 @@ export function registerValidateBlock(server: McpServer) {
           },
         ],
       };
-    }
+    },
   );
 }

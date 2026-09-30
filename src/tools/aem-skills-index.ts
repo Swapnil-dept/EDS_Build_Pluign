@@ -8,18 +8,20 @@ import {
 } from '../knowledge/aem-cloud-skills.js';
 
 export function registerAemSkillsIndex(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'aem_skills_index',
-    `Look up the catalog of Adobe AEM as a Cloud Service skills (mirrors github.com/adobe/skills/tree/beta/skills/aem/cloud-service). Returns the 6 skills (ensure-agents-md, best-practices, create-component, dispatcher, migration, aem-workflow), their purpose, when to use each, and links to the canonical SKILL.md. Pass a query string to filter, or leave it empty to get the full index. PRECONDITION: only use this tool after detect_project_type returns "aemaacs".`,
     {
+      description: `Look up the catalog of Adobe AEM as a Cloud Service skills (mirrors github.com/adobe/skills/tree/beta/skills/aem/cloud-service). Returns the 6 skills (ensure-agents-md, best-practices, create-component, dispatcher, migration, aem-workflow), their purpose, when to use each, and links to the canonical SKILL.md. Pass a query string to filter, or leave it empty to get the full index. PRECONDITION: only use this tool after detect_project_type returns "aemaacs".`,
+      inputSchema: {
       query: z.string().optional().describe('Optional skill id or keyword (e.g. "dispatcher", "migration", "create-component"). Empty = list all.'),
     },
-    {
+      annotations: {
       title: 'AEM Cloud Service Skills Index',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ query }) => {
       const skills = query?.trim()

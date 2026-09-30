@@ -42,10 +42,11 @@ function groupBlockVariants(blocksDirListing?: string): Map<string, string[]> {
 }
 
 export function registerGenerateProjectMd(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'generate_project_md',
-    'Generate or refresh `PROJECT.md` — a durable project map covering the block inventory + variants, design tokens (colors/fonts as CSS custom properties), page list, section-style conventions, import infrastructure (fstab/importer), and optional multi-brand notes. AI agents should read this file FIRST (before AGENTS.md workflow steps) to stay consistent with what already exists. Refresh after adding/removing blocks, tokens, pages, or brands.',
     {
+      description: 'Generate or refresh `PROJECT.md` — a durable project map covering the block inventory + variants, design tokens (colors/fonts as CSS custom properties), page list, section-style conventions, import infrastructure (fstab/importer), and optional multi-brand notes. AI agents should read this file FIRST (before AGENTS.md workflow steps) to stay consistent with what already exists. Refresh after adding/removing blocks, tokens, pages, or brands.',
+      inputSchema: {
       blocksDirListing: z
         .string()
         .optional()
@@ -63,12 +64,13 @@ export function registerGenerateProjectMd(server: McpServer) {
       sessionChanges: z.string().optional().describe('What changed this session (new blocks, tokens, pages, brands)'),
       projectMdPath: z.string().optional().describe('Target path, defaults to `PROJECT.md`'),
     },
-    {
+      annotations: {
       title: 'Generate PROJECT.md',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async (input) => {
       const path = input.projectMdPath ?? 'PROJECT.md';

@@ -5,18 +5,20 @@ import { AEM_CLOUD_PATTERNS, AEM_CLOUD_HARD_RULES } from '../knowledge/aem-cloud
 const BEST_PRACTICES_ROOT = 'https://github.com/adobe/skills/tree/beta/skills/aem/cloud-service/skills/best-practices';
 
 export function registerAemBestPractices(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'aem_best_practices',
-    `Look up AEM as a Cloud Service Java/OSGi/HTL pattern reference modules. Mirrors the index of Adobe's best-practices skill. Pass a pattern id or a substring (e.g. "scheduler", "replication", "eventListener", "eventHandler", "resourceChangeListener", "assetApi", "scr-to-ds", "resolver-logging", "htlLint") to get the matching module path + classification + Cloud Service hard rules. Empty query = list all. PRECONDITION: only call after detect_project_type returns "aemaacs". Critical rules: read the matching reference module BEFORE editing code; never change business logic; preserve isAuthor() guards; do not rename classes unless the module says to.`,
     {
+      description: `Look up AEM as a Cloud Service Java/OSGi/HTL pattern reference modules. Mirrors the index of Adobe's best-practices skill. Pass a pattern id or a substring (e.g. "scheduler", "replication", "eventListener", "eventHandler", "resourceChangeListener", "assetApi", "scr-to-ds", "resolver-logging", "htlLint") to get the matching module path + classification + Cloud Service hard rules. Empty query = list all. PRECONDITION: only call after detect_project_type returns "aemaacs". Critical rules: read the matching reference module BEFORE editing code; never change business logic; preserve isAuthor() guards; do not rename classes unless the module says to.`,
+      inputSchema: {
       query: z.string().optional().describe('Pattern id or keyword (scheduler / replication / eventListener / eventHandler / resourceChangeListener / assetApi / scr-to-ds / resolver-logging / htlLint). Empty = all.'),
     },
-    {
+      annotations: {
       title: 'AEMaaCS Best Practices',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ query }) => {
       const q = query?.trim().toLowerCase();

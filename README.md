@@ -262,8 +262,8 @@ Valid `projectType` values: `eds` · `aemaacs` · `aem65lts`
 
 | Tool | Description |
 |---|---|
-| `scaffold_block` | Generate the canonical 3-file UE block: `<name>.js` + `<name>.css` + `_<name>.json` (definitions + models + filters combined). Returns README/test.html/sample-content separately as **dev-only** helpers. |
-| `scaffold_model` | Generate the combined `_<block>.json` for an existing block (definitions + models + filters in one file — no more 3-file merge dance). |
+| `scaffold_block` | Generate the canonical 3-file UE block: `<name>.js` + `<name>.css` + `_<name>.json` (definitions + models + filters combined). Returns README/test.html/sample-content separately as **dev-only** helpers. Supports `baseBlock`/`blockVariant` family-grouping metadata and `authoringTarget: "xwalk" \| "da"` (DA target skips the UE JSON entirely). |
+| `scaffold_model` | Generate the combined `_<block>.json` for an existing block (definitions + models + filters in one file — no more 3-file merge dance). Supports `select`/`multiselect` `options` (flat or grouped), field `description`, `baseBlock`/`blockVariant` family metadata, and `authoringTarget: "da"` (returns guidance instead of a UE model). |
 | `scaffold_project` | Step-by-step guide for setting up a new EDS project (standard or repoless) |
 | `generate_block_from_design` | Generate a block from a text description, screenshot, and/or Figma URL |
 | `validate_block` | Validate a block against EDS coding standards and best practices |
@@ -277,6 +277,10 @@ Valid `projectType` values: `eds` · `aemaacs` · `aem65lts`
 | `generate_project_md` | Generate/refresh `PROJECT.md` — a durable project map (block inventory + variants, design tokens, page list, section styles, import infrastructure, multi-brand notes). Read this first, before the AGENTS.md workflow. |
 | `eds_multibrand_theming_guide` | Guidance for serving multiple brands/themes from one EDS repo via body-class token scoping, shared header/footer brand checks, and `promoteInlineMetadata()`. |
 | `eds_visual_verification_guide` | Guidance for verifying a built/migrated page: DOM-snapshot checks, computed-style checks against tokens, and a final pixel-diff against a reference screenshot. |
+| `eds_martech_integration_guide` | Guidance for vendoring and instrumenting Adobe's [aem-martech](https://github.com/adobe-rnd/aem-martech) plugin: `git subtree` install commands (not executed), Launch container self-hosted-alloy config, head.html preload hints, scripts.js eager/lazy/delayed wiring, consent management (AEM Consent Banner Block/OneTrust/Cookiebot), SPA personalization, and API reference. |
+| `scaffold_generation_manifest` | Resumable, per-block-variant generation tracker for a multi-block page migration — `.migration/manifest/<page>.json`. Each entry tracks pending/generated/validated/failed/skipped status; pass the prior manifest back in on a re-run to resume instead of restarting. |
+| `scaffold_page_template_catalog` | Record a migrated page as a reusable template keyed by `urlPattern` (`.migration/catalog/page-templates.json`), so other pages on the same site matching that pattern can reuse its known section/block structure. Also supports lookup-only mode to check for a match before starting a fresh migration. |
+| `generate_selector_coverage_map` | Assemble a `page-templates.json`-style section/block selector map from already-resolved selectors and run a coverage check: source vs. mapped section counts, missing selectors, and selector collisions across sections/blocks — before those mistakes reach an import parser. |
 
 
 ### AEM as a Cloud Service tools (Maven / Java stack)

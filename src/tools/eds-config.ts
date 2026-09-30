@@ -3,10 +3,11 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { CONFIG_TEMPLATES, SITEMAP_SEO, REPOLESS_GUIDE } from '../knowledge/eds-conventions.js';
 
 export function registerEdsConfig(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'eds_config',
-    `Get configuration templates and guidance for AEM EDS project files. Covers: fstab.yaml (content source mounts), head.html (meta/scripts), redirects (URL redirects spreadsheet), headers (custom HTTP headers), robots.txt, sitemap, .helix/config.xlsx (CDN/indexing), repoless setup, and metadata. Returns ready-to-use templates with inline documentation.`,
     {
+      description: `Get configuration templates and guidance for AEM EDS project files. Covers: fstab.yaml (content source mounts), head.html (meta/scripts), redirects (URL redirects spreadsheet), headers (custom HTTP headers), robots.txt, sitemap, .helix/config.xlsx (CDN/indexing), repoless setup, and metadata. Returns ready-to-use templates with inline documentation.`,
+      inputSchema: {
       configType: z
         .enum([
           'fstab',
@@ -31,12 +32,13 @@ export function registerEdsConfig(server: McpServer) {
         .describe('Content source type'),
       folderId: z.string().optional().describe('Google Drive folder ID or SharePoint path'),
     },
-    {
+      annotations: {
       title: 'EDS Configuration Templates',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ configType, domain, contentSource, folderId }) => {
       const siteDomain = domain || '<your-domain>';
@@ -169,6 +171,6 @@ export function registerEdsConfig(server: McpServer) {
           },
         ],
       };
-    }
+    },
   );
 }

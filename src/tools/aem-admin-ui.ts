@@ -19,9 +19,10 @@ const SECTION_LABELS: Record<string, string> = {
 };
 
 export function registerAemAdminUi(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'aem_admin_ui',
-    [
+    {
+      description: [
       'Look up patterns for building AEM admin tooling — Coral UI 3 pages, Sling Servlets, and Service User / UserMapper config.',
       '',
       'SECTIONS:',
@@ -40,7 +41,7 @@ export function registerAemAdminUi(server: McpServer) {
       '',
       'PRECONDITION: for AEMaaCS projects (detect_project_type returns "aemaacs").',
     ].join('\n'),
-    {
+      inputSchema: {
       query: z
         .string()
         .optional()
@@ -51,12 +52,13 @@ export function registerAemAdminUi(server: McpServer) {
           'Empty = full index.',
         ),
     },
-    {
+      annotations: {
       title: 'AEM Admin UI — Coral UI / Servlet / Service User Patterns',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ query }) => {
       const q = (query ?? '').trim().toLowerCase();

@@ -202,18 +202,20 @@ const BLOCK_STRUCTURES: Record<string, { description: string; rows: string; exam
 export function registerEdsPageImport(server: McpServer) {
 
   // ─── 1. Skills index ─────────────────────────────────────
-  server.tool(
+  server.registerTool(
     'eds_page_import_skills_index',
-    `Look up Adobe's official AEM Edge Delivery Services skills catalog (mirrors github.com/adobe/skills/tree/beta/skills/aem/edge-delivery-services/skills). Returns 19 skills: page-import (orchestrator) and its sub-skills (scrape-webpage, identify-page-structure, page-decomposition, block-inventory, authoring-analysis, block-collection-and-party, content-modeling, generate-import-html, preview-import) plus the parallel content-driven-development orchestrator and its sub-skills. Pass a query string to filter, or leave empty for the full index. PRECONDITION: only use after \`detect_project_type\` returns \`eds\` (or before scaffolding a new EDS site).`,
     {
+      description: `Look up Adobe's official AEM Edge Delivery Services skills catalog (mirrors github.com/adobe/skills/tree/beta/skills/aem/edge-delivery-services/skills). Returns 19 skills: page-import (orchestrator) and its sub-skills (scrape-webpage, identify-page-structure, page-decomposition, block-inventory, authoring-analysis, block-collection-and-party, content-modeling, generate-import-html, preview-import) plus the parallel content-driven-development orchestrator and its sub-skills. Pass a query string to filter, or leave empty for the full index. PRECONDITION: only use after \`detect_project_type\` returns \`eds\` (or before scaffolding a new EDS site).`,
+      inputSchema: {
       query: z.string().optional().describe('Optional skill id or keyword (e.g. "import", "scrape", "metadata"). Empty = all.'),
     },
-    {
+      annotations: {
       title: 'EDS Skills Index',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ query }) => {
       const filter = (query ?? '').toLowerCase().trim();
@@ -239,18 +241,20 @@ export function registerEdsPageImport(server: McpServer) {
   );
 
   // ─── 2. Block HTML structure reference ───────────────────
-  server.tool(
+  server.registerTool(
     'eds_block_html_structure',
-    `Return the canonical Adobe **DIV-structure** HTML for a block (no tables, no field comments). EDS Universal Editor and the modern aem-importer-cli both expect div-blocks: \`<div class="<block>"><div><div>...</div></div></div>\` — outer = block, middle = row, inner = cell. Use BEFORE generating import HTML to see exact row/column shape per block. Pass a block name (hero / cards / columns / accordion / tabs / carousel / quote / fragment / metadata / section-metadata) or omit for the full reference.`,
     {
+      description: `Return the canonical Adobe **DIV-structure** HTML for a block (no tables, no field comments). EDS Universal Editor and the modern aem-importer-cli both expect div-blocks: \`<div class="<block>"><div><div>...</div></div></div>\` — outer = block, middle = row, inner = cell. Use BEFORE generating import HTML to see exact row/column shape per block. Pass a block name (hero / cards / columns / accordion / tabs / carousel / quote / fragment / metadata / section-metadata) or omit for the full reference.`,
+      inputSchema: {
       block: z.string().optional().describe('Block name. Omit for the full reference.'),
     },
-    {
+      annotations: {
       title: 'EDS Block HTML Structure',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ block }) => {
       const out: string[] = [];
@@ -287,20 +291,22 @@ export function registerEdsPageImport(server: McpServer) {
     sequences: z.array(SequenceSchema).min(1).describe('Ordered sequences — each is default content OR a block.'),
   });
 
-  server.tool(
+  server.registerTool(
     'eds_generate_import_html',
-    `Generate the final \`<page>.plain.html\` for a page-import session, following Adobe's \`generate-import-html\` skill. Emits Adobe **DIV structure** (sections as top-level \`<div>\`s, blocks as \`<div class="<name>">\` with row × cell divs, section-metadata at section start, Metadata block at end). NO field comments. NO \`<html>\` / \`<head>\` / \`<body>\` / \`<header>\` / \`<main>\` / \`<footer>\` wrappers — the AEM CLI auto-wraps. PRECONDITION: must be called AFTER \`authoring-analysis\` produced the section + sequence list. Pair with \`eds_block_html_structure\` to validate per-block row/cell shape before passing data here.`,
     {
+      description: `Generate the final \`<page>.plain.html\` for a page-import session, following Adobe's \`generate-import-html\` skill. Emits Adobe **DIV structure** (sections as top-level \`<div>\`s, blocks as \`<div class="<name>">\` with row × cell divs, section-metadata at section start, Metadata block at end). NO field comments. NO \`<html>\` / \`<head>\` / \`<body>\` / \`<header>\` / \`<main>\` / \`<footer>\` wrappers — the AEM CLI auto-wraps. PRECONDITION: must be called AFTER \`authoring-analysis\` produced the section + sequence list. Pair with \`eds_block_html_structure\` to validate per-block row/cell shape before passing data here.`,
+      inputSchema: {
       htmlFilePath: z.string().describe('Output path from scrape-webpage `metadata.json` (e.g. "us/en/about.plain.html"). Images folder will be sibling: us/en/images/.'),
       sections:     z.array(SectionSchema).min(1).describe('Sections in document order. Each contains optional section-metadata + ordered sequences.'),
       metadata:     z.record(z.string()).optional().describe('Page metadata key/values (title, description, image, canonical, tags). Skip og:* / twitter:* / viewport (auto-populated). Omits if all values match defaults.'),
     },
-    {
+      annotations: {
       title: 'Generate EDS Import HTML',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ htmlFilePath, sections, metadata }) => {
       const sectionDivs: string[] = [];

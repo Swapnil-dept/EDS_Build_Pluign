@@ -3,10 +3,11 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { PERFORMANCE_RULES } from '../knowledge/eds-conventions.js';
 
 export function registerPerformanceCheck(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'check_performance',
-    `Analyze an EDS block's code for performance issues and estimate its impact on the 100KB pre-LCP budget. Checks JS and CSS size, identifies render-blocking patterns, lazy loading compliance, CLS risks, and main-thread work. Returns a performance report with actionable recommendations.`,
     {
+      description: `Analyze an EDS block's code for performance issues and estimate its impact on the 100KB pre-LCP budget. Checks JS and CSS size, identifies render-blocking patterns, lazy loading compliance, CLS risks, and main-thread work. Returns a performance report with actionable recommendations.`,
+      inputSchema: {
       blockName: z.string().describe('Block name'),
       js: z.string().optional().describe('Block JS file contents'),
       css: z.string().optional().describe('Block CSS file contents'),
@@ -14,13 +15,14 @@ export function registerPerformanceCheck(server: McpServer) {
         .boolean()
         .default(false)
         .describe('Whether this block appears above the fold (eager-loaded)'),
-    },
-    {
+      },
+      annotations: {
       title: 'Check Block Performance',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+      },
     },
     async ({ blockName, js, css, isAboveFold }) => {
       const findings: Array<{

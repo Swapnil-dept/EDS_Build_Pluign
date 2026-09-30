@@ -2,10 +2,11 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 export function registerEdsScripts(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'eds_scripts_guide',
-    `Guide for customizing EDS global scripts: scripts.js (loading lifecycle, auto-blocking, metadata), delayed.js (analytics, third-party scripts), and aem.js usage patterns. Returns templates and examples for common customization needs like adding analytics, custom fonts, auto-blocking, header/footer loading, and metadata processing.`,
     {
+      description: `Guide for customizing EDS global scripts: scripts.js (loading lifecycle, auto-blocking, metadata), delayed.js (analytics, third-party scripts), and aem.js usage patterns. Returns templates and examples for common customization needs like adding analytics, custom fonts, auto-blocking, header/footer loading, and metadata processing.`,
+      inputSchema: {
       topic: z
         .enum([
           'scripts-js-overview',
@@ -23,12 +24,13 @@ export function registerEdsScripts(server: McpServer) {
         ])
         .describe('Which scripts topic to get guidance on'),
     },
-    {
+      annotations: {
       title: 'EDS Scripts Guide',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ topic }) => {
       const sections: string[] = [];
@@ -364,6 +366,6 @@ custom decoration steps (e.g. auto-blocking, custom button patterns).`);
       return {
         content: [{ type: 'text' as const, text: sections.join('\n\n---\n\n') }],
       };
-    }
+    },
   );
 }

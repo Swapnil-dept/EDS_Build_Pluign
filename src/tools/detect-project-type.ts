@@ -3,10 +3,11 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { detectProjectType, DETECTION_INPUT_RECIPE } from '../knowledge/project-detection.js';
 
 export function registerDetectProjectType(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'detect_project_type',
-    `Detect which kind of project the current workspace is — vanilla AEM Edge Delivery Services, AEM as a Cloud Service (Maven/Java), or AEM 6.5 LTS / AMS (Maven/Java, on-prem). Pass any combination of: package.json, root/scripts/blocks dir listings, scripts/__dropins__/ listing, head.html, config.json, fstab.yaml, plus AEM inputs (pom.xml, .aem-skills-config.yaml, ui.apps/ core/ dispatcher/ listings). Returns: project type (eds | aemaacs | aem65lts | unknown), confidence, the signals that drove the verdict, installed drop-ins, detected AEM modules, mismatch warnings, and the recommended next tools. Always run this BEFORE deciding which scaffold/validate/lookup tool to use so the right tools are recommended. The Cloud Service vs 6.5 LTS distinction is driven by the AEM API dependency in pom.xml: aem-sdk-api → Cloud, uber-jar / cq.quickstart.version → 6.5 LTS.`,
     {
+      description: `Detect which kind of project the current workspace is — vanilla AEM Edge Delivery Services, AEM as a Cloud Service (Maven/Java), or AEM 6.5 LTS / AMS (Maven/Java, on-prem). Pass any combination of: package.json, root/scripts/blocks dir listings, scripts/__dropins__/ listing, head.html, config.json, fstab.yaml, plus AEM inputs (pom.xml, .aem-skills-config.yaml, ui.apps/ core/ dispatcher/ listings). Returns: project type (eds | aemaacs | aem65lts | unknown), confidence, the signals that drove the verdict, installed drop-ins, detected AEM modules, mismatch warnings, and the recommended next tools. Always run this BEFORE deciding which scaffold/validate/lookup tool to use so the right tools are recommended. The Cloud Service vs 6.5 LTS distinction is driven by the AEM API dependency in pom.xml: aem-sdk-api → Cloud, uber-jar / cq.quickstart.version → 6.5 LTS.`,
+      inputSchema: {
       packageJson:       z.string().optional().describe('Contents of package.json'),
       rootDirListing:    z.string().optional().describe('`ls` of project root (one name per line)'),
       scriptsDirListing: z.string().optional().describe('`ls scripts/`'),
@@ -21,12 +22,13 @@ export function registerDetectProjectType(server: McpServer) {
       coreDirListing:       z.string().optional().describe('`ls core/` if the directory exists'),
       dispatcherDirListing: z.string().optional().describe('`ls dispatcher/` if the directory exists'),
     },
-    {
+      annotations: {
       title: 'Detect Project Type',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async (input) => {
       const result = detectProjectType(input);

@@ -6,21 +6,23 @@ const MIGRATION_ROOT = 'https://github.com/adobe/skills/tree/beta/skills/aem/clo
 const BEST_PRACTICES_ROOT = 'https://github.com/adobe/skills/tree/beta/skills/aem/cloud-service/skills/best-practices';
 
 export function registerAemMigrationPattern(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'aem_migration_pattern',
-    `Run **one** legacy AEM → AEMaaCS migration pattern with the orchestration rules from Adobe's "migration" skill. Pick a single pattern id (scheduler | resourceChangeListener | replication | eventListener | eventHandler | assetApi | htlLint). The tool returns the discovery flow (BPA CSV → CAM/MCP → manual), the pattern's reference module path, and the strict critical rules. PRECONDITION: only after detect_project_type returns "aemaacs". RULE: one pattern per session. If the user asks to "fix everything", ask them to pick one before calling this.`,
     {
+      description: `Run **one** legacy AEM → AEMaaCS migration pattern with the orchestration rules from Adobe's "migration" skill. Pick a single pattern id (scheduler | resourceChangeListener | replication | eventListener | eventHandler | assetApi | htlLint). The tool returns the discovery flow (BPA CSV → CAM/MCP → manual), the pattern's reference module path, and the strict critical rules. PRECONDITION: only after detect_project_type returns "aemaacs". RULE: one pattern per session. If the user asks to "fix everything", ask them to pick one before calling this.`,
+      inputSchema: {
       pattern: z.enum(['scheduler', 'resourceChangeListener', 'replication', 'eventListener', 'eventHandler', 'assetApi', 'htlLint']).describe('Exactly one pattern id.'),
       source:  z.enum(['bpa-csv', 'cam-mcp', 'manual']).default('manual').describe('Where the targets come from. bpa-csv = user provides ./reports/bpa.csv. cam-mcp = run list-projects then fetch-cam-bpa-findings. manual = user names files.'),
       bpaCsvPath: z.string().optional().describe('Path to the BPA CSV when source = "bpa-csv".'),
       filePaths:  z.array(z.string()).default([]).describe('Workspace-relative file paths when source = "manual".'),
     },
-    {
+      annotations: {
       title: 'AEMaaCS Migration (one pattern)',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ pattern, source, bpaCsvPath, filePaths }) => {
       const ref = AEM_CLOUD_PATTERNS.find((p) => p.id === pattern);

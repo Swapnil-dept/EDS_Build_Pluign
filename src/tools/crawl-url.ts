@@ -109,21 +109,23 @@ function detectComponentCandidates(html: string): { type: string; signal: string
 }
 
 export function registerCrawlUrl(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'crawl_url',
-    `Fetch a public URL (or analyze pre-fetched HTML) and extract design + structural signals usable as input to block scaffolding. Returns: page meta, color palette (top hex/rgb), font stacks, headings (h1/h2/h3), framework hints (WordPress / AEM / Next / Bootstrap / Tailwind), component candidates with confidence (hero/carousel/cards/tabs/accordion/form/cta/video/nav/footer/table), repeating CSS classes (3+ occurrences = likely component children), and image / link / form counts. Static analysis only — for SPA / JS-rendered sites, render the page first with Microsoft's Playwright MCP (\`@microsoft/playwright-mcp\`) and pass the rendered HTML via the \`html\` parameter.`,
     {
+      description: `Fetch a public URL (or analyze pre-fetched HTML) and extract design + structural signals usable as input to block scaffolding. Returns: page meta, color palette (top hex/rgb), font stacks, headings (h1/h2/h3), framework hints (WordPress / AEM / Next / Bootstrap / Tailwind), component candidates with confidence (hero/carousel/cards/tabs/accordion/form/cta/video/nav/footer/table), repeating CSS classes (3+ occurrences = likely component children), and image / link / form counts. Static analysis only — for SPA / JS-rendered sites, render the page first with Microsoft's Playwright MCP (\`@microsoft/playwright-mcp\`) and pass the rendered HTML via the \`html\` parameter.`,
+      inputSchema: {
       url: z.string().url().optional().describe('Public URL to fetch. Either `url` or `html` must be supplied.'),
       html: z.string().optional().describe('Pre-fetched HTML (e.g. from Playwright MCP after JS rendering). Overrides `url` if both are given.'),
       userAgent: z.string().optional().describe('Custom User-Agent header (some sites block default node fetch).'),
       maxBytes: z.number().int().positive().max(5_000_000).default(2_000_000).describe('Max bytes to read from a fetched URL (default 2 MB).'),
-    },
-    {
+      },
+      annotations: {
       title: 'Crawl URL',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: true,
+      },
     },
     async ({ url, html: providedHtml, userAgent, maxBytes }) => {
       let html = providedHtml;

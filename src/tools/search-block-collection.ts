@@ -6,22 +6,24 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
  * Queries the GitHub API to find blocks before building from scratch.
  */
 export function registerSearchBlockCollection(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'search_block_collection',
-    `Search Adobe's official Block Collection and community Block Party repositories for existing EDS block implementations. Use before building a block from scratch — an official implementation may already exist. Queries the GitHub API for folder names and returns matching blocks with source URLs.`,
     {
+      description: `Search Adobe's official Block Collection and community Block Party repositories for existing EDS block implementations. Use before building a block from scratch — an official implementation may already exist. Queries the GitHub API for folder names and returns matching blocks with source URLs.`,
+      inputSchema: {
       query: z.string().describe('Block name or type to search for (e.g. "accordion", "carousel", "tabs")'),
       source: z
         .enum(['collection', 'party', 'both'])
         .default('both')
         .describe('Which repository to search: Adobe Block Collection, community Block Party, or both'),
     },
-    {
+      annotations: {
       title: 'Search Block Collection',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: true,
+    },
     },
     async ({ query, source }) => {
       const searchTerm = query.toLowerCase().trim();
@@ -132,6 +134,6 @@ export function registerSearchBlockCollection(server: McpServer) {
       return {
         content: [{ type: 'text' as const, text: sections.join('\n\n') }],
       };
-    }
+    },
   );
 }

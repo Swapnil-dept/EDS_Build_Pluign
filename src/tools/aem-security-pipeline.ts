@@ -335,10 +335,11 @@ Monitoring
 };
 
 export function registerAemSecurityPipeline(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'aem_security_pipeline',
-    `End-to-end security pipeline reference for AEM as a Cloud Service and EDS (Edge Delivery Services). Returns gate-by-gate guidance on SAST/SonarQube, dependency scanning (OWASP Maven / npm audit), secrets management (Cloud Manager env vars), Dispatcher security filters, HTTP security headers, GitHub Actions security workflows, client-side JS XSS prevention, and security checklists. Covers both stacks side-by-side. Query by platform (aem | eds | both) and section (overview | sast | deps | secrets | dispatcher | headers | blocks | ci | checklist | all).`,
     {
+      description: `End-to-end security pipeline reference for AEM as a Cloud Service and EDS (Edge Delivery Services). Returns gate-by-gate guidance on SAST/SonarQube, dependency scanning (OWASP Maven / npm audit), secrets management (Cloud Manager env vars), Dispatcher security filters, HTTP security headers, GitHub Actions security workflows, client-side JS XSS prevention, and security checklists. Covers both stacks side-by-side. Query by platform (aem | eds | both) and section (overview | sast | deps | secrets | dispatcher | headers | blocks | ci | checklist | all).`,
+      inputSchema: {
       platform: z
         .enum(['aem', 'eds', 'both'])
         .optional()
@@ -362,12 +363,13 @@ export function registerAemSecurityPipeline(server: McpServer) {
             '  all — full guide',
         ),
     },
-    {
+      annotations: {
       title: 'AEM / EDS Security Pipeline',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ platform = 'both', section = 'overview' }) => {
       const parts: string[] = [];

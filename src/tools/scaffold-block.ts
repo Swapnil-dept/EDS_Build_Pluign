@@ -8,10 +8,24 @@ import {
   generateSampleContent,
   generateBlockJsonFile,
   type BlockPattern,
+  type ModelOption,
 } from '../knowledge/block-templates.js';
 import { BLOCK_PATTERNS } from '../knowledge/eds-conventions.js';
 
 const BLOCK_NAME_REGEX = /^[a-z][a-z0-9-]*$/;
+
+const OPTION_SCHEMA = z.object({
+  name: z.string().describe('Option label shown to the author'),
+  value: z.string().describe('Option value stored in content'),
+});
+
+const OPTION_OR_GROUP_SCHEMA = z.union([
+  OPTION_SCHEMA,
+  z.object({
+    name: z.string().describe('Group heading shown above its children (e.g. "Behavior", "SEO & Schema")'),
+    children: z.array(OPTION_SCHEMA).describe('Options nested under this group'),
+  }),
+]);
 
 // ─── Clarification gate ──────────────────────────────────────────
 // Required questions every new-block request must answer BEFORE
@@ -120,9 +134,10 @@ ${sel} img {
 }
 
 export function registerScaffoldBlock(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'scaffold_block',
-    `Generate the canonical 3-file Universal Editor block structure: \`<name>.js\` + \`<name>.css\` + \`_<name>.json\`.
+    {
+      description: `Generate the canonical 3-file Universal Editor block structure: \`<name>.js\` + \`<name>.css\` + \`_<name>.json\`.
 
 ⚠️  PRECONDITION — call \`clarify_task(intent: "new-block")\` + \`component_interview(projectType: "eds")\` FIRST and collect the user's answers one question per turn. This tool WILL BLOCK at two gates:
 
@@ -141,7 +156,7 @@ Required from the user before scaffolding:
 3. \`fields\` — every authoring field the user named (never auto-add)
 
 Run \`detect_project_type\` first if you are unsure of the project type.`,
-    {
+      inputSchema: {
       blockName: z
         .string()
         .regex(BLOCK_NAME_REGEX, 'Must be lowercase, hyphenated (e.g. "hero", "product-card")')
@@ -154,6 +169,19 @@ Run \`detect_project_type\` first if you are unsure of the project type.`,
         .boolean()
         .optional()
         .describe('Set to true after you have run lookup_block + scanned blocks/ and confirmed this is NOT a variant of any existing block. Gate 1 fires if neither this nor variantOf is set.'),
+      baseBlock: z
+        .string()
+        .optional()
+        .describe('Family grouping (NOT a CSS variant): the shared "base" name this block belongs to when it has distinct JS/behaviour but should be catalogued/registered together with siblings (e.g. baseBlock: "cards" for cards-price, cards-plan, cards-stats). Unlike `variantOf`, this still scaffolds a full standalone block — it only affects grouping metadata (component-definition group, README family note, DA Library grouping).'),
+      blockVariant: z
+        .string()
+        .optional()
+        .describe('Human-readable variant label within `baseBlock` (e.g. "price" for `cards-price`). Only meaningful when `baseBlock` is set.'),
+      authoringTarget: z
+        .enum(['xwalk', 'da'])
+        .optional()
+        .default('xwalk')
+        .describe('Authoring model this block targets. "xwalk" (default) = Universal Editor — emits `_<block>.json` (definitions+models+filters). "da" = Document Authoring — NO UE dialogs/JSON; authors fill a plain table per the README content contract instead.'),
       description: z
         .string()
         .optional()
@@ -190,6 +218,12 @@ Run \`detect_project_type\` first if you are unsure of the project type.`,
               ])
               .describe('UE field type'),
             label: z.string().describe('Human-readable field label'),
+            defaultValue: z.string().optional().describe('Default value shown in the UE property panel'),
+            description: z.string().optional().describe('Authoring help text shown under the field'),
+            options: z
+              .array(OPTION_OR_GROUP_SCHEMA)
+              .optional()
+              .describe('Required for `select`/`multiselect` fields — flat `{name, value}` entries, or grouped `{name, children:[...]}` headings'),
           })
         )
         .optional()
@@ -204,21 +238,28 @@ Run \`detect_project_type\` first if you are unsure of the project type.`,
                 name:  z.string(),
                 type:  z.enum(['text', 'textarea', 'richtext', 'reference', 'aem-content', 'select', 'multiselect', 'boolean', 'number']),
                 label: z.string(),
+                defaultValue: z.string().optional().describe('Default value shown in the UE property panel'),
+                description: z.string().optional().describe('Authoring help text shown under the field'),
+                options: z
+                  .array(OPTION_OR_GROUP_SCHEMA)
+                  .optional()
+                  .describe('Required for `select`/`multiselect` item fields'),
               }))
-              .describe('Fields for this item type'),
+              .describe('Fields for this item type. Prefix names with `col1_`, `col2_`, … when the item should collapse into table columns on the parent row (EDS Block Forge column convention).'),
           })
         )
         .optional()
         .describe('Container blocks only (cards/tabs/carousel/accordion): child item types with their own fields.'),
     },
-    {
+      annotations: {
       title: 'Scaffold EDS Block',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
     },
-    async ({ blockName, variantOf, confirmedNewBlock, description, pattern, naming, variant, layout, hasMedia, interactive, aboveFold, fields, items }) => {
+    },
+    async ({ blockName, variantOf, confirmedNewBlock, baseBlock, blockVariant, authoringTarget, description, pattern, naming, variant, layout, hasMedia, interactive, aboveFold, fields, items }) => {
       try {
         // ── Gate 1: Variant check ─────────────────────────────────
         const variantGate = checkVariantStep({ variantOf, confirmedNewBlock });
@@ -321,16 +362,30 @@ Run \`detect_project_type\` first if you are unsure of the project type.`,
 
         const testHtml = generateTestHtml(blockName, sampleContent);
 
-        const blockJson = effectiveFields
+        const blockJson = (effectiveFields && authoringTarget !== 'da')
           ? generateBlockJsonFile(
               blockName,
-              effectiveFields.map((f) => ({ name: f.name, type: f.type as string, label: f.label })),
+              effectiveFields.map((f) => ({
+                name: f.name,
+                type: f.type as string,
+                label: f.label,
+                defaultValue: (f as { defaultValue?: string }).defaultValue,
+                description: (f as { description?: string }).description,
+                options: (f as { options?: ModelOption[] }).options,
+              })),
               {
                 pattern: resolvedPattern,
                 items: items?.map((item) => ({
                   id:     item.id,
                   title:  item.title,
-                  fields: item.fields.map((f) => ({ name: f.name, type: f.type as string, label: f.label })),
+                  fields: item.fields.map((f) => ({
+                    name: f.name,
+                    type: f.type as string,
+                    label: f.label,
+                    defaultValue: f.defaultValue,
+                    description: f.description,
+                    options: f.options,
+                  })),
                 })),
               },
             )
@@ -363,17 +418,24 @@ Run \`detect_project_type\` first if you are unsure of the project type.`,
         const patternLabel = resolvedPattern ? ` · pattern: \`${resolvedPattern}\`` : '';
         const namingLabel  = naming !== 'flat' ? ` · naming: \`${naming}\`` : '';
         const foldLabel    = aboveFold ? ' · ⚡ above-fold (LCP-critical)' : '';
+        const familyLabel  = baseBlock && baseBlock !== blockName ? ` · family: \`${baseBlock}\`${blockVariant ? ` (${blockVariant})` : ''}` : '';
+        const targetLabel  = authoringTarget === 'da' ? ' · target: **Document Authoring (DA)**' : '';
 
         return {
           content: [
             {
               type: 'text' as const,
               text:
-                `✅ Scaffolded EDS block: **${blockName}**${patternLabel}${namingLabel}${foldLabel}\n\n` +
-                `**Universal Editor canonical convention:** a UE block folder contains exactly ` +
-                `**3 files** — \`<name>.js\`, \`<name>.css\`, and \`_<name>.json\`. ` +
-                `The project build aggregates every block's \`_<name>.json\` into the project-root ` +
-                `\`component-definitions.json\`, \`component-models.json\`, and \`component-filters.json\` — never hand-edit those.\n\n` +
+                `✅ Scaffolded EDS block: **${blockName}**${patternLabel}${namingLabel}${foldLabel}${familyLabel}${targetLabel}\n\n` +
+                (authoringTarget === 'da'
+                  ? `**Document Authoring target:** no \`_${blockName}.json\` is emitted — DA has no Universal Editor dialogs. Authors fill a plain table per the "Authoring" section of the README below (the \`contentPattern\`/content contract for this block). Register the block in the DA Library separately.\n\n`
+                  : `**Universal Editor canonical convention:** a UE block folder contains exactly ` +
+                    `**3 files** — \`<name>.js\`, \`<name>.css\`, and \`_<name>.json\`. ` +
+                    `The project build aggregates every block's \`_<name>.json\` into the project-root ` +
+                    `\`component-definitions.json\`, \`component-models.json\`, and \`component-filters.json\` — never hand-edit those.\n\n`) +
+                (baseBlock && baseBlock !== blockName
+                  ? `**Family grouping:** this block belongs to the \`${baseBlock}\` family${blockVariant ? ` as the "${blockVariant}" variant` : ''}. It is a fully standalone block (own JS/CSS/behaviour) — \`baseBlock\` only affects how it's grouped when registering in the DA Library / component-definition group; it does NOT share JS with \`${baseBlock}\`. If you also want the two to share behaviour code, do that manually.\n\n`
+                  : '') +
                 (aboveFold
                   ? `⚡ **Above-fold / LCP rules applied:** first \`<img>\` has \`loading="eager" fetchpriority="high"\`. ` +
                     `Total pre-LCP JS + CSS budget = 100 KB. Run \`check_performance\` after editing.\n\n`
@@ -382,8 +444,10 @@ Run \`detect_project_type\` first if you are unsure of the project type.`,
                 `${canonicalOut}\n\n` +
                 (blockJson
                   ? ''
-                  : `> No \`fields\` were provided so \`_${blockName}.json\` was NOT emitted. ` +
-                    `Re-run with a field list, or call \`scaffold_model\` separately.\n\n`) +
+                  : authoringTarget === 'da'
+                    ? `> DA target \u2014 \`_${blockName}.json\` intentionally skipped.\n\n`
+                    : `> No \`fields\` were provided so \`_${blockName}.json\` was NOT emitted. ` +
+                      `Re-run with a field list, or call \`scaffold_model\` separately.\n\n`) +
                 `## Dev-only helpers — Adobe CDD test paths\n\n` +
                 `**Never commit these inside \`blocks/${blockName}/\`** — they break the UE block contract.\n` +
                 `Follow Adobe's CDD pattern:\n` +
@@ -408,7 +472,7 @@ Run \`detect_project_type\` first if you are unsure of the project type.`,
           content: [{ type: 'text' as const, text: `Scaffold failed: ${(error as Error).message}` }],
         };
       }
-    }
+    },
   );
 }
 

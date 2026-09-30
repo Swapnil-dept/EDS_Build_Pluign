@@ -59,20 +59,22 @@ const MCP_TOOLS = [
 ];
 
 export function registerAemDispatcherConfig(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'aem_dispatcher_config',
-    `Route AEM Dispatcher requests to the right specialist (config authoring, technical advisory, incident response, performance tuning, security hardening, full lifecycle). Mirrors Adobe's "dispatcher" skill index. Pass \`variant\` to pick the deployment target: "cloud" (AEMaaCS, AEM_DEPLOYMENT_MODE=cloud) or "ams" (AEM 6.5 LTS / AMS, AEM_DEPLOYMENT_MODE=ams). Returns scoped guidance, the right Adobe SKILL.md link, and the matching MCP core-7 tools (when the user has Dispatcher MCP configured for that variant). PRECONDITION: only after detect_project_type returns "aemaacs" (variant=cloud) or "aem65lts" (variant=ams).`,
     {
+      description: `Route AEM Dispatcher requests to the right specialist (config authoring, technical advisory, incident response, performance tuning, security hardening, full lifecycle). Mirrors Adobe's "dispatcher" skill index. Pass \`variant\` to pick the deployment target: "cloud" (AEMaaCS, AEM_DEPLOYMENT_MODE=cloud) or "ams" (AEM 6.5 LTS / AMS, AEM_DEPLOYMENT_MODE=ams). Returns scoped guidance, the right Adobe SKILL.md link, and the matching MCP core-7 tools (when the user has Dispatcher MCP configured for that variant). PRECONDITION: only after detect_project_type returns "aemaacs" (variant=cloud) or "aem65lts" (variant=ams).`,
+      inputSchema: {
       variant:  z.enum(['cloud', 'ams']).describe('cloud = AEMaaCS (AEM_DEPLOYMENT_MODE=cloud). ams = AEM 6.5 LTS / AMS (AEM_DEPLOYMENT_MODE=ams). Match this to the result of detect_project_type.'),
       intent:   z.enum(['config-authoring', 'technical-advisory', 'incident-response', 'performance-tuning', 'security-hardening', 'workflow-orchestrator']).describe('Which dispatcher specialist to route to.'),
       question: z.string().optional().describe('The user question, in their words. Echoed back so the IDE LLM keeps context.'),
     },
-    {
+      annotations: {
       title: 'AEM Dispatcher',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ variant, intent, question }) => {
       const s = SUB_SKILLS[intent];

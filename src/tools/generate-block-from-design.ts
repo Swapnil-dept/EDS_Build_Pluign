@@ -37,16 +37,17 @@ const BLOCK_NAME_REGEX = /^[a-z][a-z0-9-]*$/;
  *  - `naming` param: 'flat' (default, Vitamix/Ingredion style) or 'bem' (Volvo style)
  */
 export function registerGenerateBlockFromDesign(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'generate_block_from_design',
-    `Generate a pixel-perfect AEM EDS block from any combination of text description, image/screenshot, and/or Figma URL.
+    {
+      description: `Generate a pixel-perfect AEM EDS block from any combination of text description, image/screenshot, and/or Figma URL.
 
 Applies Adobe's Content-Driven-Development workflow and emits:
 - Pattern-matched JS scaffold (hero | cards | accordion | carousel | columns | tabs | custom)
 - Pattern-matched CSS with fluid typography (clamp()), aspect-ratio, mobile-first breakpoints
 - UE component-model JSON with auto-injected classes multiselect + DA editor hints
 - Vision-analysis prompt that classifies the design into an archetype before generating code`,
-    {
+      inputSchema: {
       blockName: z
         .string()
         .regex(BLOCK_NAME_REGEX, 'Must be lowercase, hyphenated (e.g. "hero", "product-card")')
@@ -90,12 +91,13 @@ Applies Adobe's Content-Driven-Development workflow and emits:
       hasMedia: z.boolean().default(false).describe('Block contains image/video media'),
       interactive: z.boolean().default(false).describe('Block has click/hover interactivity (custom pattern only)'),
     },
-    {
+      annotations: {
       title: 'Generate EDS block from design (text / image / Figma)',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({
       blockName,

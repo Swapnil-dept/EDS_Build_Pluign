@@ -42,6 +42,10 @@ import { registerScaffoldMigrationPlan } from './tools/scaffold-migration-plan.j
 import { registerGenerateProjectMd } from './tools/generate-project-md.js';
 import { registerEdsMultibrandTheming } from './tools/eds-multibrand-theming.js';
 import { registerEdsVerificationGuide } from './tools/eds-verification-guide.js';
+import { registerEdsMartechIntegration } from './tools/eds-martech-integration.js';
+import { registerScaffoldGenerationManifest } from './tools/scaffold-generation-manifest.js';
+import { registerScaffoldPageTemplateCatalog } from './tools/scaffold-page-template-catalog.js';
+import { registerGenerateSelectorCoverageMap } from './tools/generate-selector-coverage-map.js';
 
 // Tools — Project routing (smart detection)
 import { registerDetectProjectType } from './tools/detect-project-type.js';
@@ -97,6 +101,10 @@ registerScaffoldMigrationPlan(server); // scaffold_migration_plan — section-by
 registerGenerateProjectMd(server); // generate_project_md — durable PROJECT.md project map
 registerEdsMultibrandTheming(server); // eds_multibrand_theming_guide — body-class brand scoping guidance
 registerEdsVerificationGuide(server); // eds_visual_verification_guide — DOM/computed-style/pixel-diff verification guidance
+registerEdsMartechIntegration(server); // eds_martech_integration_guide — adobe-rnd/aem-martech vendoring + instrumentation guidance
+registerScaffoldGenerationManifest(server); // scaffold_generation_manifest — resumable per-block-variant generation tracker
+registerScaffoldPageTemplateCatalog(server); // scaffold_page_template_catalog — urlPattern-keyed template reuse catalog
+registerGenerateSelectorCoverageMap(server); // generate_selector_coverage_map — section/block selector coverage + collision check
 
 // Tools: Project & Configuration
 registerScaffoldProject(server);  // scaffold_project — new project setup guide
@@ -156,6 +164,8 @@ async function main() {
   console.error('          bootstrap_workspace_instructions,');
   console.error('          scaffold_migration_plan, generate_project_md,');
   console.error('          eds_multibrand_theming_guide, eds_visual_verification_guide,');
+  console.error('          eds_martech_integration_guide,');
+  console.error('          scaffold_generation_manifest, scaffold_page_template_catalog, generate_selector_coverage_map,');
   console.error('          scaffold_project, eds_config, eds_scripts_guide');
   console.error('   Routing: detect_project_type (call first to decide EDS vs AEM)');
   console.error('   AEMaaCS tools: aem_skills_index, ensure_agents_md, scaffold_aem_component,');

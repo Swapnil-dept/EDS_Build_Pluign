@@ -384,10 +384,11 @@ See \`.github/copilot-instructions.md\` for the full mandatory workflow and tool
 `;
 
 export function registerBootstrapWorkspace(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'bootstrap_workspace_instructions',
-    `Emit ready-to-write project-instruction files that teach the user's AI agent (Copilot / Cursor / Cline / Continue / Claude Code) to use the eds-mcp-server tools automatically. Pass \`projectType\` (from \`detect_project_type\`) to get a project-specific \`.github/copilot-instructions.md\` with the correct setup steps, tool routing, and conventions. Omit \`projectType\` to get the generic all-projects version. Returns EXACT contents to write to: \`.github/copilot-instructions.md\` (VS Code Copilot Chat), \`.cursorrules\` (Cursor / Cline / Continue), and \`AGENTS.md\` (Claude Code / generic). Call this **once per new workspace**, right after \`detect_project_type\`. Idempotent: refuse to overwrite existing files without explicit user permission.`,
     {
+      description: `Emit ready-to-write project-instruction files that teach the user's AI agent (Copilot / Cursor / Cline / Continue / Claude Code) to use the eds-mcp-server tools automatically. Pass \`projectType\` (from \`detect_project_type\`) to get a project-specific \`.github/copilot-instructions.md\` with the correct setup steps, tool routing, and conventions. Omit \`projectType\` to get the generic all-projects version. Returns EXACT contents to write to: \`.github/copilot-instructions.md\` (VS Code Copilot Chat), \`.cursorrules\` (Cursor / Cline / Continue), and \`AGENTS.md\` (Claude Code / generic). Call this **once per new workspace**, right after \`detect_project_type\`. Idempotent: refuse to overwrite existing files without explicit user permission.`,
+      inputSchema: {
       projectType: z
         .enum(['eds', 'aemaacs', 'aem65lts'])
         .optional()
@@ -396,12 +397,13 @@ export function registerBootstrapWorkspace(server: McpServer) {
       includeCursor:   z.boolean().default(true).describe('Emit `.cursorrules` for Cursor / Cline / Continue.'),
       includeAgentsMd: z.boolean().default(true).describe('Emit `AGENTS.md` for Claude Code / generic agents.'),
     },
-    {
+      annotations: {
       title: 'Bootstrap Workspace Instructions',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ projectType, includeCopilot, includeCursor, includeAgentsMd }) => {
       // Select the right copilot-instructions content for this project type

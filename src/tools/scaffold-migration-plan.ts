@@ -22,10 +22,11 @@ const SECTION_SCHEMA = z.object({
 });
 
 export function registerScaffoldMigrationPlan(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'scaffold_migration_plan',
-    'Generate a section-by-section EDS build plan (page/brand context, per-section reuse-vs-new-block decisions, content-authoring approach, design-token/brand notes, and a checklist) formatted to save at `.migration/plans/<page-slug>.md`. Reference screenshots go in `.migration/screens/`. Advisory: recommended before authoring content/blocks for a full page, especially screenshot-only builds or pages introducing a new brand/theme. Read-only — returns markdown; the caller writes the file and gets user approval before implementing.',
     {
+      description: 'Generate a section-by-section EDS build plan (page/brand context, per-section reuse-vs-new-block decisions, content-authoring approach, design-token/brand notes, and a checklist) formatted to save at `.migration/plans/<page-slug>.md`. Reference screenshots go in `.migration/screens/`. Advisory: recommended before authoring content/blocks for a full page, especially screenshot-only builds or pages introducing a new brand/theme. Read-only — returns markdown; the caller writes the file and gets user approval before implementing.',
+      inputSchema: {
       pageName: z.string().describe('Human-readable page name, e.g. "Nippon India ETF Homepage"'),
       pageSlug: z
         .string()
@@ -45,12 +46,13 @@ export function registerScaffoldMigrationPlan(server: McpServer) {
       screenshotPaths: z.array(z.string()).optional().describe('Reference screenshot paths to save under `.migration/screens/`'),
       additionalChecklist: z.array(z.string()).optional().describe('Extra checklist items beyond the standard per-section + lint + visual QA items'),
     },
-    {
+      annotations: {
       title: 'Scaffold Migration Plan',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({
       pageName,

@@ -11,18 +11,20 @@ const DIALOG_DESIGN_GUIDE_ROOT =
   'https://github.com/Swapnil-dept/EDS_Build_Pluign/blob/dev/src/knowledge/aem-dialog-design.ts';
 
 export function registerAemDialogDesign(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'aem_dialog_design',
-    `Look up AEM component dialog design best practices. Returns guidance on naming conventions, tab organization, field types, validation, tooltips, CoralUI compliance, policy-driven configuration, and AEMaaCS compatibility. Pass a query to search by keyword (e.g., "naming", "coralui", "tooltip", "simplicity", "show-hide", "validation") or a field type (e.g., "switch", "radio", "select", "textfield", "pathpicker"). Empty query returns overview. PRECONDITION: primarily for AEMaaCS component authors.`,
     {
+      description: `Look up AEM component dialog design best practices. Returns guidance on naming conventions, tab organization, field types, validation, tooltips, CoralUI compliance, policy-driven configuration, and AEMaaCS compatibility. Pass a query to search by keyword (e.g., "naming", "coralui", "tooltip", "simplicity", "show-hide", "validation") or a field type (e.g., "switch", "radio", "select", "textfield", "pathpicker"). Empty query returns overview. PRECONDITION: primarily for AEMaaCS component authors.`,
+      inputSchema: {
       query: z.string().optional().describe('Keyword or principle id (naming-consistency, dialog-simplicity, tab-organization, policy-driven-config, style-system, show-hide-logic, in-context-editing, coralui-compliance, tooltips-and-help, validation-and-defaults, multiselect-option-modeling, path-picker-context, aeaacs-compatibility). Field types: switch-toggle, radio-button, select-dropdown, select-list, tag-list, text-input, text-area, rich-text-editor, number-input, datepicker, path-picker-pages, path-picker-assets, path-picker-content-fragments, multifield, image-crop, color-picker. Empty = overview.'),
     },
-    {
+      annotations: {
       title: 'AEM Dialog Design Best Practices',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ query }) => {
       const q = query?.trim().toLowerCase() ?? '';

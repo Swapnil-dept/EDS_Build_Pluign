@@ -3,10 +3,11 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { BLOCK_DOM_PIPELINE } from '../knowledge/eds-conventions.js';
 
 export function registerExplainDom(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'explain_dom',
-    `Explain how an EDS block's authored content (table in Google Docs/Word) transforms into DOM structure. Provide a block name and number of rows/columns, and this tool shows the exact HTML that EDS generates before your decorate() function runs. Essential for understanding what your decorate function receives.`,
     {
+      description: `Explain how an EDS block's authored content (table in Google Docs/Word) transforms into DOM structure. Provide a block name and number of rows/columns, and this tool shows the exact HTML that EDS generates before your decorate() function runs. Essential for understanding what your decorate function receives.`,
+      inputSchema: {
       blockName: z.string().describe('Block name (e.g. "hero", "cards")'),
       variant: z.string().optional().describe('Block variant (e.g. "dark", "wide")'),
       rows: z
@@ -28,12 +29,13 @@ export function registerExplainDom(server: McpServer) {
         .optional()
         .describe('Optional: specific cell contents as 2D array [row][col]. Uses "Content R{r}C{c}" if omitted.'),
     },
-    {
+      annotations: {
       title: 'Explain Block DOM',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ blockName, variant, rows, columns, cellContents }) => {
       const variantClass = variant
@@ -109,6 +111,6 @@ ${columns > 2 ? `    // cells[2..${columns - 1}] = additional columns` : ''}
           },
         ],
       };
-    }
+    },
   );
 }

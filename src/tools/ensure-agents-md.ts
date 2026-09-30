@@ -74,10 +74,11 @@ const MODULE_DESCRIPTIONS: Record<string, string> = {
 };
 
 export function registerEnsureAgentsMd(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'ensure_agents_md',
-    `Bootstrap the AGENTS.md and CLAUDE.md files at an AEM project root. Mirrors Adobe's "ensure-agents-md" skill for both **Cloud Service** and **6.5 LTS / AMS** variants. PRECONDITION: only use after detect_project_type returns "aemaacs" or "aem65lts". Pass the variant explicitly. Returns a contents-ready AGENTS.md tailored to the modules / add-ons / variant, plus a one-line CLAUDE.md ("@AGENTS.md"), and — for the cloud variant only — a .aem-skills-config.yaml stub. Never overwrite existing files.`,
     {
+      description: `Bootstrap the AGENTS.md and CLAUDE.md files at an AEM project root. Mirrors Adobe's "ensure-agents-md" skill for both **Cloud Service** and **6.5 LTS / AMS** variants. PRECONDITION: only use after detect_project_type returns "aemaacs" or "aem65lts". Pass the variant explicitly. Returns a contents-ready AGENTS.md tailored to the modules / add-ons / variant, plus a one-line CLAUDE.md ("@AGENTS.md"), and — for the cloud variant only — a .aem-skills-config.yaml stub. Never overwrite existing files.`,
+      inputSchema: {
       variant:     z.enum(['cloud-service', '6.5-lts']).describe('Which Adobe skill variant to render. Pick "cloud-service" for AEMaaCS, "6.5-lts" for AEM 6.5 LTS / AMS / on-prem.'),
       projectName: z.string().describe('Human-readable project name (e.g. "WKND Sites Project", "My Site"). Falls back to a humanised artifactId.'),
       modules:     z.array(z.string()).default([]).describe('Module folders that actually exist (subset of: core, ui.apps, ui.config, ui.frontend, ui.content, ui.tests, it.tests, dispatcher, all). Detection should report this.'),
@@ -86,12 +87,13 @@ export function registerEnsureAgentsMd(server: McpServer) {
       hasClaudeMd: z.boolean().default(false).describe('Whether CLAUDE.md already exists at workspace root.'),
       hasAemSkillsConfig: z.boolean().default(false).describe('Whether .aem-skills-config.yaml already exists. Only relevant for variant=cloud-service.'),
     },
-    {
+      annotations: {
       title: 'Ensure AGENTS.md (AEM bootstrap)',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ variant, projectName, modules, addOns, hasAgentsMd, hasClaudeMd, hasAemSkillsConfig }) => {
       const isCloud = variant === 'cloud-service';

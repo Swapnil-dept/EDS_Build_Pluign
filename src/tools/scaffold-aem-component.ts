@@ -24,10 +24,11 @@ function fieldResourceType(type: string): string {
 }
 
 export function registerScaffoldAemComponent(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'scaffold_aem_component',
-    `Scaffold a complete AEM as a Cloud Service component: \`.content.xml\`, \`_cq_dialog/.content.xml\` (Granite UI), HTL template, Sling Model + JUnit test, and a clientlib (CSS+JS+css.txt+js.txt). Mirrors Adobe's create-component skill. PRECONDITION: only use after detect_project_type returns "aemaacs" AND the project has an AGENTS.md and \`.aem-skills-config.yaml\` with \`configured: true\`. The project, package, and group values must come from \`.aem-skills-config.yaml\` — do not infer them from the file system.`,
     {
+      description: `Scaffold a complete AEM as a Cloud Service component: \`.content.xml\`, \`_cq_dialog/.content.xml\` (Granite UI), HTL template, Sling Model + JUnit test, and a clientlib (CSS+JS+css.txt+js.txt). Mirrors Adobe's create-component skill. PRECONDITION: only use after detect_project_type returns "aemaacs" AND the project has an AGENTS.md and \`.aem-skills-config.yaml\` with \`configured: true\`. The project, package, and group values must come from \`.aem-skills-config.yaml\` — do not infer them from the file system.`,
+      inputSchema: {
       componentName: z.string().regex(/^[a-z][a-z0-9-]*$/).describe('kebab-case component name (e.g. "promo-card", "hero-banner")'),
       title:         z.string().describe('Editor-visible component title (e.g. "Promo Card")'),
       project:       z.string().describe('AEM project name from .aem-skills-config.yaml (used in /apps/<project>/components/...)'),
@@ -37,12 +38,13 @@ export function registerScaffoldAemComponent(server: McpServer) {
       extendsCore:   z.string().optional().describe('Optional Core Component to extend (e.g. "teaser", "list", "navigation"). Resolves to the Sling Resource Merger pattern with @Self @Via(ResourceSuperType.class).'),
       hasServlet:    z.boolean().default(false).describe('Whether the component needs a Sling Servlet (dynamic data, external API, form submission).'),
     },
-    {
+      annotations: {
       title: 'Scaffold AEM Component',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ componentName, title, project, javaPackage, group, fields, extendsCore, hasServlet }) => {
       const Pascal = pascal(componentName);

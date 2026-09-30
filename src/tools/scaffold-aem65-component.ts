@@ -45,10 +45,11 @@ function fieldResourceType(type: string): string {
 }
 
 export function registerScaffoldAem65Component(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'scaffold_aem65_component',
-    `Scaffold a complete AEM 6.5 LTS / AMS component: \`.content.xml\`, \`_cq_dialog/.content.xml\` (Granite UI Coral 3), HTL template, Sling Model + JUnit test, and a clientlib (CSS+JS+css.txt+js.txt). 6.5 LTS does NOT ship an Adobe \`create-component\` skill — this tool follows the same Granite UI / HTL / Sling Models patterns the AEMaaCS skill uses, adjusted for 6.5 conventions (uber-jar / cq.quickstart, Felix SCR still allowed but DS R6 preferred, Package Manager deploy, no \`.aem-skills-config.yaml\`). PRECONDITION: only use after detect_project_type returns "aem65lts". DO NOT use on AEMaaCS — use \`scaffold_aem_component\` for that.`,
     {
+      description: `Scaffold a complete AEM 6.5 LTS / AMS component: \`.content.xml\`, \`_cq_dialog/.content.xml\` (Granite UI Coral 3), HTL template, Sling Model + JUnit test, and a clientlib (CSS+JS+css.txt+js.txt). 6.5 LTS does NOT ship an Adobe \`create-component\` skill — this tool follows the same Granite UI / HTL / Sling Models patterns the AEMaaCS skill uses, adjusted for 6.5 conventions (uber-jar / cq.quickstart, Felix SCR still allowed but DS R6 preferred, Package Manager deploy, no \`.aem-skills-config.yaml\`). PRECONDITION: only use after detect_project_type returns "aem65lts". DO NOT use on AEMaaCS — use \`scaffold_aem_component\` for that.`,
+      inputSchema: {
       componentName: z.string().regex(/^[a-z][a-z0-9-]*$/).describe('kebab-case component name (e.g. "promo-card", "hero-banner")'),
       title:         z.string().describe('Editor-visible component title (e.g. "Promo Card")'),
       project:       z.string().describe('AEM project name (used in /apps/<project>/components/...). Read from the project\'s root pom.xml <artifactId>.'),
@@ -58,12 +59,13 @@ export function registerScaffoldAem65Component(server: McpServer) {
       extendsCore:   z.string().optional().describe('Optional Core Component to extend (e.g. "teaser", "list", "navigation"). Resolves to the Sling Resource Merger pattern with @Self @Via(ResourceSuperType.class). Requires Core Components 2.x + on 6.5 LTS.'),
       hasServlet:    z.boolean().default(false).describe('Whether the component needs a Sling Servlet (dynamic data, external API, form submission).'),
     },
-    {
+      annotations: {
       title: 'Scaffold AEM 6.5 LTS Component',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ componentName, title, project, javaPackage, group, fields, extendsCore, hasServlet }) => {
       const Pascal = pascal(componentName);

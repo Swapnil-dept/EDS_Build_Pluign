@@ -92,19 +92,21 @@ Common causes: wrong transport URI / user, blocked port, expired SSL cert, \`/va
 };
 
 export function registerAem65Replication(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'aem65_replication',
-    `Route AEM 6.5 LTS / AMS Replication tasks to the right specialist (configure-replication-agent | replicate-content | replication-api | troubleshoot-replication | replication-orchestrator). Mirrors Adobe's "aem-replication" skill index. PRECONDITION: only after detect_project_type returns "aem65lts". DO NOT use on AEM as a Cloud Service — Cloud uses the Sling Distribution API instead, and the migration skill in cloud-service/best-practices/references/replication.md handles that.`,
     {
+      description: `Route AEM 6.5 LTS / AMS Replication tasks to the right specialist (configure-replication-agent | replicate-content | replication-api | troubleshoot-replication | replication-orchestrator). Mirrors Adobe's "aem-replication" skill index. PRECONDITION: only after detect_project_type returns "aem65lts". DO NOT use on AEM as a Cloud Service — Cloud uses the Sling Distribution API instead, and the migration skill in cloud-service/best-practices/references/replication.md handles that.`,
+      inputSchema: {
       intent: z.enum(['configure-replication-agent', 'replicate-content', 'replication-api', 'troubleshoot-replication', 'replication-orchestrator']).describe('Which replication specialist to route to.'),
       question: z.string().optional().describe('The user question, in their words. Echoed back so the IDE LLM keeps context.'),
     },
-    {
+      annotations: {
       title: 'AEM 6.5 LTS Replication',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ intent, question }) => {
       const s = SUB_SKILLS[intent];

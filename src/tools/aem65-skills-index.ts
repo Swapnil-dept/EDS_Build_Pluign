@@ -8,18 +8,20 @@ import {
 } from '../knowledge/aem-65-lts-skills.js';
 
 export function registerAem65SkillsIndex(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'aem65_skills_index',
-    `Look up the catalog of Adobe AEM 6.5 LTS / AMS skills (mirrors github.com/adobe/skills/tree/beta/skills/aem/6.5-lts). Returns the 4 skills (ensure-agents-md, aem-replication, aem-workflow, dispatcher) — note: NO create-component, best-practices, or migration skills here (those are Cloud-Service-only). Pass a query string to filter, or leave it empty to get the full index. PRECONDITION: only use this tool after detect_project_type returns "aem65lts".`,
     {
+      description: `Look up the catalog of Adobe AEM 6.5 LTS / AMS skills (mirrors github.com/adobe/skills/tree/beta/skills/aem/6.5-lts). Returns the 4 skills (ensure-agents-md, aem-replication, aem-workflow, dispatcher) — note: NO create-component, best-practices, or migration skills here (those are Cloud-Service-only). Pass a query string to filter, or leave it empty to get the full index. PRECONDITION: only use this tool after detect_project_type returns "aem65lts".`,
+      inputSchema: {
       query: z.string().optional().describe('Optional skill id or keyword (e.g. "replication", "workflow", "dispatcher"). Empty = list all.'),
     },
-    {
+      annotations: {
       title: 'AEM 6.5 LTS Skills Index',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ query }) => {
       const skills = query?.trim()

@@ -1474,6 +1474,11 @@ export function generateBlockCSS(blockName: string, options?: {
 
 // ─── Component Model JSON ───────────────────────────────────────
 
+export type ModelOption = { name: string; value: string };
+
+/** A grouped option header — used for e.g. "Behavior" / "SEO & Schema" groupings inside a `classes` or `select` options list. */
+export type ModelOptionGroup = { name: string; children: Array<ModelOption> };
+
 export type ModelField = {
   name: string;
   type: string;
@@ -1489,6 +1494,15 @@ export type ModelField = {
   domPath?: boolean;
   /** Default value shown in UE property panel. */
   defaultValue?: string;
+  /** Authoring help text shown under the field in the UE property panel. */
+  description?: string;
+  /**
+   * `select` / `multiselect` options. Flat entries (`{name, value}`) or
+   * grouped entries (`{name, children:[...]}`) — mirrors the EDS Block
+   * Forge convention of "GROUP: then indented children, or one flat option
+   * per line".
+   */
+  options?: Array<ModelOption | ModelOptionGroup>;
 };
 
 /** Pattern → default variant options emitted in the `classes` multiselect. */
@@ -1533,6 +1547,8 @@ function fieldToModelEntry(f: ModelField): Record<string, unknown> {
   if (f.required) entry.required = true;
   if (f.multi !== undefined) entry.multi = f.multi;
   if (f.defaultValue !== undefined) entry.value = f.defaultValue;
+  if (f.description) entry.description = f.description;
+  if (f.options && f.options.length > 0) entry.options = f.options;
   return entry;
 }
 

@@ -216,20 +216,22 @@ const SPECS: Record<ProjectType, InterviewSpec> = {
 };
 
 export function registerComponentInterview(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'component_interview',
-    `Return the canonical question set for collecting authoring fields, variants, and feature toggles BEFORE calling a scaffold tool. Use this to drive an interactive Q&A with the user instead of guessing fields. Works across **EDS** (Universal Editor blocks), **AEMaaCS** (Granite UI components), and **AEM 6.5 LTS / AMS** (Granite UI components). Returns: the matching scaffold tool name, the field-type catalog with examples, common variants, feature toggles, the ordered question list, and a JSON template the chat fills in from the user's answers. PRECONDITION: call \`detect_project_type\` first so you pass the right \`projectType\`.`,
     {
+      description: `Return the canonical question set for collecting authoring fields, variants, and feature toggles BEFORE calling a scaffold tool. Use this to drive an interactive Q&A with the user instead of guessing fields. Works across **EDS** (Universal Editor blocks), **AEMaaCS** (Granite UI components), and **AEM 6.5 LTS / AMS** (Granite UI components). Returns: the matching scaffold tool name, the field-type catalog with examples, common variants, feature toggles, the ordered question list, and a JSON template the chat fills in from the user's answers. PRECONDITION: call \`detect_project_type\` first so you pass the right \`projectType\`.`,
+      inputSchema: {
       projectType: z.enum(['eds', 'aemaacs', 'aem65lts']).describe('Project type from `detect_project_type`. eds = Universal Editor blocks, aemaacs = AEM as a Cloud Service, aem65lts = AEM 6.5 LTS / AMS.'),
       componentName: z.string().optional().describe('Optional working name (kebab-case). Echoed in the question prompts so the chat is concrete.'),
       purpose: z.string().optional().describe('Optional one-sentence description of what the component should do. Echoed back to keep the interview focused.'),
     },
-    {
+      annotations: {
       title: 'Component Interview',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ projectType, componentName, purpose }) => {
       const spec = SPECS[projectType];

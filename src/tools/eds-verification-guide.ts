@@ -10,21 +10,23 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
  * automation MCP (e.g. Playwright MCP) when one is installed.
  */
 export function registerEdsVerificationGuide(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'eds_visual_verification_guide',
-    'Guidance for verifying a built or migrated EDS page/section: DOM-snapshot checks, computed-style checks against design tokens, and a final pixel-diff against a reference screenshot at desktop + mobile widths. Guidance only (no browser automation) — pair with an installed browser automation MCP such as Playwright MCP when available.',
     {
+      description: 'Guidance for verifying a built or migrated EDS page/section: DOM-snapshot checks, computed-style checks against design tokens, and a final pixel-diff against a reference screenshot at desktop + mobile widths. Guidance only (no browser automation) — pair with an installed browser automation MCP such as Playwright MCP when available.',
+      inputSchema: {
       topic: z
         .enum(['overview', 'dom-snapshot', 'computed-style-checks', 'pixel-diff', 'checklist', 'all'])
         .default('all')
         .describe('Which verification topic to get guidance on'),
     },
-    {
+      annotations: {
       title: 'EDS Visual Verification Guide',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async ({ topic }) => {
       const sections: string[] = [];

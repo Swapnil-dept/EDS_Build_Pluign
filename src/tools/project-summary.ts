@@ -122,10 +122,11 @@ function summarizeSession(existingSummary?: string, sessionChanges?: string): st
 }
 
 export function registerProjectSummary(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'project_summary',
-    'Generate or refresh a workspace summary that captures project type, functional scope, global definitions (theme CSS, runtime scripts, auth/encryption/config signals), and the latest session delta. Use it at the start of a session to create `.project-summary.md` or `PROJECT_SUMMARY.md`, and at the end with `existingSummary` + `sessionChanges` to refresh that file.',
     {
+      description: 'Generate or refresh a workspace summary that captures project type, functional scope, global definitions (theme CSS, runtime scripts, auth/encryption/config signals), and the latest session delta. Use it at the start of a session to create `.project-summary.md` or `PROJECT_SUMMARY.md`, and at the end with `existingSummary` + `sessionChanges` to refresh that file.',
+      inputSchema: {
       packageJson: z.string().optional().describe('Contents of package.json'),
       rootDirListing: z.string().optional().describe('`ls` of the project root (one name per line)'),
       scriptsDirListing: z.string().optional().describe('`ls scripts/`'),
@@ -146,12 +147,13 @@ export function registerProjectSummary(server: McpServer) {
       sessionChanges: z.string().optional().describe('Bullet list or plain text summary of what changed in this session'),
       summaryPath: z.string().optional().describe('Target summary path, e.g. `.project-summary.md` or `PROJECT_SUMMARY.md`'),
     },
-    {
+      annotations: {
       title: 'Project Summary',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    },
     },
     async (input) => {
       const provided = Object.values(input).some((value) => value != null && value !== '');
