@@ -46,6 +46,8 @@ import { registerEdsMartechIntegration } from './tools/eds-martech-integration.j
 import { registerScaffoldGenerationManifest } from './tools/scaffold-generation-manifest.js';
 import { registerScaffoldPageTemplateCatalog } from './tools/scaffold-page-template-catalog.js';
 import { registerGenerateSelectorCoverageMap } from './tools/generate-selector-coverage-map.js';
+import { registerScaffoldMigrationRunbook } from './tools/scaffold-migration-runbook.js';
+import { registerScaffoldVisualGate } from './tools/scaffold-visual-gate.js';
 
 // Tools — Project routing (smart detection)
 import { registerDetectProjectType } from './tools/detect-project-type.js';
@@ -105,6 +107,8 @@ registerEdsMartechIntegration(server); // eds_martech_integration_guide — adob
 registerScaffoldGenerationManifest(server); // scaffold_generation_manifest — resumable per-block-variant generation tracker
 registerScaffoldPageTemplateCatalog(server); // scaffold_page_template_catalog — urlPattern-keyed template reuse catalog
 registerGenerateSelectorCoverageMap(server); // generate_selector_coverage_map — section/block selector coverage + collision check
+registerScaffoldMigrationRunbook(server); // scaffold_migration_runbook — MIGRATION-RUNBOOK.md + per-page STATUS.md
+registerScaffoldVisualGate(server); // scaffold_visual_gate — gate:visual pixelmatch script generator
 
 // Tools: Project & Configuration
 registerScaffoldProject(server);  // scaffold_project — new project setup guide
@@ -166,6 +170,7 @@ async function main() {
   console.error('          eds_multibrand_theming_guide, eds_visual_verification_guide,');
   console.error('          eds_martech_integration_guide,');
   console.error('          scaffold_generation_manifest, scaffold_page_template_catalog, generate_selector_coverage_map,');
+  console.error('          scaffold_migration_runbook, scaffold_visual_gate,');
   console.error('          scaffold_project, eds_config, eds_scripts_guide');
   console.error('   Routing: detect_project_type (call first to decide EDS vs AEM)');
   console.error('   AEMaaCS tools: aem_skills_index, ensure_agents_md, scaffold_aem_component,');
